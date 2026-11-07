@@ -18,7 +18,7 @@ public sealed class Translator : IDisposable
 {
     public static Translator Instance { get; } = new();
 
-    private readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(15) };
+    private readonly HttpClient http = Net.Create(TimeSpan.FromSeconds(15));
     private readonly ConcurrentDictionary<string, string> done = new();
     private readonly ConcurrentDictionary<string, byte> failed = new();
     private readonly ConcurrentDictionary<string, byte> inFlight = new();

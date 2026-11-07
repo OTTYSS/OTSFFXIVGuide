@@ -23,7 +23,7 @@ internal sealed class BisTab
     private sealed record BisSet(string Name, Dictionary<string, (uint Item, List<uint> Materia)> Slots);
     private sealed record Sheet(string Title, List<BisSet> Sets);
 
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(20) };
+    private static readonly HttpClient Http = Net.Create(TimeSpan.FromSeconds(30));
     private static readonly ConcurrentDictionary<string, object?> cache = new();
     private static readonly ConcurrentDictionary<string, byte> loading = new();
 
@@ -61,6 +61,11 @@ internal sealed class BisTab
             });
         return null;
     }
+
+    /// <summary>Загрузка закончилась ошибкой (в кеше пусто и запрос не идёт).</summary>
+    private static bool Failed(string url) => cache.TryGetValue(url, out var v) && v is null && !loading.ContainsKey(url);
+
+    private static void Retry(string url) => cache.TryRemove(url, out _);
 
     private static List<(string, string)> ParseIndex(string json, string job)
     {
@@ -149,10 +154,17 @@ internal sealed class BisTab
         Theme.Panel("bsrc", () =>
         {
             if (presetsFor != abbr) { presets = null; presetsFor = abbr; }
-            var idx = Fetch("https://staticbis.xivgear.app/_index.json", j => (object)j) as string;
+            const string indexUrl = "https://staticbis.xivgear.app/_index.json";
+            var idx = Fetch(indexUrl, j => (object)j) as string;
             if (idx is not null && presets is null) presets = ParseIndex(idx, abbr);
             Theme.SubHeader($"Готовые наборы xivgear для {abbr.ToUpperInvariant()}");
-            if (presets is null) ImGui.TextColored(Theme.TextDim, "Загружаю список…");
+            if (presets is null && Failed(indexUrl))
+            {
+                ImGui.TextColored(Theme.Red, "Не удалось загрузить список с xivgear.app.");
+                ImGui.SameLine();
+                if (ImGui.SmallButton("Повторить##bisidx")) Retry(indexUrl);
+            }
+            else if (presets is null) ImGui.TextColored(Theme.TextDim, "Загружаю список…");
             else if (presets.Count == 0) ImGui.TextColored(Theme.TextDim, "Для этой профессии готовых наборов нет (у хилеров их публикует Balance в виде ссылок) — вставь ссылку ниже.");
             else
                 foreach (var (path, title) in presets.Take(8))
@@ -183,7 +195,13 @@ internal sealed class BisTab
         var sheet = Fetch<Sheet>(url, etro ? ParseEtro : ParseXivgear);
         if (sheet is null)
         {
-            Theme.Panel("bload", () => ImGui.TextColored(Theme.TextDim, loading.ContainsKey(url) ? "Загружаю сет…" : "Не удалось загрузить сет (ссылка устарела или сайт недоступен)."));
+            Theme.Panel("bload", () =>
+            {
+                if (!Failed(url)) { ImGui.TextColored(Theme.TextDim, "Загружаю сет…"); return; }
+                ImGui.TextColored(Theme.Red, "Не удалось загрузить сет (ссылка устарела или сайт недоступен).");
+                ImGui.SameLine();
+                if (ImGui.SmallButton("Повторить##bisset")) Retry(url);
+            });
             return;
         }
         if (sheet.Sets.Count == 0) { Theme.Panel("bempty", () => ImGui.TextColored(Theme.TextDim, "В листе нет сетов.")); return; }

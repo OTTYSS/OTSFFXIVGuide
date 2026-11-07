@@ -21,7 +21,7 @@ public sealed class MobImages : IDisposable
 
     private const string Api = "https://ffxiv.consolegameswiki.com/mediawiki/api.php";
 
-    private readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private readonly HttpClient http = Net.Create(TimeSpan.FromSeconds(30));
     private readonly string dir;
     private readonly string indexFile;
     private readonly ConcurrentDictionary<string, string> urls = new(StringComparer.OrdinalIgnoreCase);  // имя → url ("" — нет)

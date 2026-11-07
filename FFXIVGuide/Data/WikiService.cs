@@ -93,7 +93,7 @@ public sealed class WikiService : IDisposable
     private const string Base = "https://www.garlandtools.org/db/doc/";
     private static readonly TimeSpan DiskTtl = TimeSpan.FromDays(7);
 
-    private readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private readonly HttpClient http = Net.Create(TimeSpan.FromSeconds(30));
     private readonly string cacheDir;
     private readonly ConcurrentDictionary<string, object?> docs = new();
     private readonly ConcurrentDictionary<string, byte> inFlight = new();

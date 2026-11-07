@@ -21,7 +21,7 @@ public sealed class NameTranslations : IDisposable
 {
     public static NameTranslations Instance { get; private set; } = null!;
 
-    private readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private readonly HttpClient http = Net.Create(TimeSpan.FromSeconds(30));
     private readonly ConcurrentDictionary<string, string> ru = new(StringComparer.Ordinal);
     private readonly string file;
     private CancellationTokenSource? cts;

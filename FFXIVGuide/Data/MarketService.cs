@@ -19,7 +19,7 @@ public sealed class MarketService : IDisposable
 {
     private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(10);
 
-    private readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(15) };
+    private readonly HttpClient http = Net.Create(TimeSpan.FromSeconds(15));
     private readonly ConcurrentDictionary<(string Region, uint Item), MarketPrice?> cache = new();
     private readonly ConcurrentDictionary<(string Region, uint Item), byte> inFlight = new();
 

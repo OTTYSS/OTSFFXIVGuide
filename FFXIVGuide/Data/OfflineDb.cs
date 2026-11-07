@@ -75,8 +75,7 @@ public sealed class OfflineDb : IDisposable
     public OfflineDb()
     {
         Instance = this;
-        var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All };
-        http = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(5) };
+        http = Net.Create(TimeSpan.FromMinutes(5));
         http.DefaultRequestHeaders.UserAgent.ParseAdd("FFXIVGuide/2.1 (Dalamud plugin)");
         Dir = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "db");
         try
