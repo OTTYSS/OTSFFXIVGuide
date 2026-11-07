@@ -1,0 +1,16 @@
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Version>2.6.0</Version>
+    <Description>Справочник в игре: сюжет, данжи и механики, вики, экипировка, таймеры, погода, цены.</Description>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>FFXIVGuide</RootNamespace>
+    <AssemblyName>OTSFFXIVGuide</AssemblyName>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Mechanics\*.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\Relics.json" />
+  </ItemGroup>
+</Project>

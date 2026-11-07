@@ -1,0 +1,32 @@
+[
+  {
+    "Author": "OTTYSSS",
+    "Name": "OTSFFXIVGuide",
+    "InternalName": "OTSFFXIVGuide",
+    "AssemblyVersion": "2.6.0.0",
+    "TestingAssemblyVersion": "2.6.0.0",
+    "Punchline": "Справочник в игре: сюжет, данжи и механики, вики, экипировка, таймеры, погода, цены.",
+    "Description": "Большой справочник по игре прямо в окне: сюжет и квесты, данжи с механиками боссов и лутом, вики (предметы, бестиарий с фото, зоны, NPC, рыбалка, синий маг), экипировка и прокачка, дейлики и таймеры, погода Эорзеи, Gold Saucer, океаническая рыбалка, реликвии, коллекции, разбор инвентаря и цены рынка. Офлайн-база и русские названия. Только показывает информацию — ничего не нажимает за игрока.",
+    "ApplicableVersion": "any",
+    "RepoUrl": "https://github.com/OTTYSS/OTSFFXIVGuide",
+    "Tags": [
+      "guide",
+      "wiki",
+      "quests",
+      "duties",
+      "items",
+      "gear",
+      "bestiary",
+      "russian"
+    ],
+    "CategoryTags": [
+      "utility"
+    ],
+    "DalamudApiLevel": 15,
+    "LoadPriority": 0,
+    "DownloadLinkInstall": "https://github.com/OTTYSS/OTSFFXIVGuide/releases/latest/download/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/OTTYSS/OTSFFXIVGuide/releases/latest/download/latest.zip",
+    "DownloadLinkTesting": "https://github.com/OTTYSS/OTSFFXIVGuide/releases/latest/download/latest.zip",
+    "AcceptsFeedback": true
+  }
+]
