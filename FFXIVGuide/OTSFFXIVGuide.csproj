@@ -1,6 +1,6 @@
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>2.6.0</Version>
+    <Version>2.7.0</Version>
     <Description>Справочник в игре: сюжет, данжи и механики, вики, экипировка, таймеры, погода, цены.</Description>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>FFXIVGuide</RootNamespace>
@@ -12,5 +12,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\Relics.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\images\icon.png" Link="images\icon.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

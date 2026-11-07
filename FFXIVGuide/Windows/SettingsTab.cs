@@ -190,6 +190,23 @@ internal sealed class SettingsTab
             if (ImGui.SmallButton("Проверить уведомление")) Notify.Send(Notify.Kind.Weather, "Проверка", "Так будут выглядеть уведомления.");
         }));
 
+        panels.Add(() => Theme.Panel("smap", () =>
+        {
+            Theme.SubHeader("Метки на карте игры");
+            ImGui.TextColored(Theme.TextDim, "Иконки на карте зоны (окно карты, клавиша M). Только показывают.");
+            foreach (var (key, name, _) in MapMarkers.Kinds)
+            {
+                var on = cfg.MapMarkerKinds.Contains(key);
+                if (ImGui.Checkbox($"{name}##mm{key}", ref on))
+                {
+                    if (on) cfg.MapMarkerKinds.Add(key); else cfg.MapMarkerKinds.Remove(key);
+                    MapMarkers.Invalidate();
+                    changed = true;
+                }
+            }
+            ImGui.TextColored(Theme.Gray, "Рыбалка и FATE берутся из офлайн-базы. Изменения видны после переоткрытия карты.");
+        }));
+
         panels.Add(() => Theme.Panel("sdb", () =>
         {
             Theme.SubHeader("База данных (офлайн)");

@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture }
 
 public sealed class MainWindow : Window
 {
@@ -61,6 +61,7 @@ public sealed class MainWindow : Window
             (MainTab.Items, FontAwesomeIcon.Gem, "Предметы"),
             (MainTab.Bestiary, FontAwesomeIcon.Skull, "Бестиарий"),
             (MainTab.Wiki, FontAwesomeIcon.BookOpen, "Зоны, NPC, рыбалка, избранное"),
+            (MainTab.Furniture, FontAwesomeIcon.Couch, "Мебель"),
         }),
         new("Активности", FontAwesomeIcon.Fire, new[]
         {
@@ -76,11 +77,13 @@ public sealed class MainWindow : Window
         new("Персонаж", FontAwesomeIcon.ShieldAlt, new[]
         {
             (MainTab.Gear, FontAwesomeIcon.ShieldAlt, "Экипировка"),
+            (MainTab.Bis, FontAwesomeIcon.Star, "BiS-сеты"),
             (MainTab.Build, FontAwesomeIcon.Flask, "Материя и еда"),
             (MainTab.Leveling, FontAwesomeIcon.ArrowCircleUp, "Прокачка"),
             (MainTab.Achievements, FontAwesomeIcon.Trophy, "Достижения"),
             (MainTab.Diary, FontAwesomeIcon.ChartLine, "Дневник"),
             (MainTab.Collections, FontAwesomeIcon.Paw, "Коллекции"),
+            (MainTab.MountFarm, FontAwesomeIcon.Horse, "Фарм маунтов"),
             (MainTab.Unlocks, FontAwesomeIcon.Unlock, "Разблокировки"),
             (MainTab.Glamour, FontAwesomeIcon.Tshirt, "Гламур"),
         }),
@@ -129,6 +132,8 @@ public sealed class MainWindow : Window
         shopping = new ShoppingTab(market);
         relics = new RelicTab(data);
         weekly = new WeeklyTab(data);
+        mountFarm = new MountFarmTab(data);
+        furniture = new FurnitureTab(market);
         story = new StoryTab(data, quests, duties);
         search = new SearchTab(data, duties, quests, items, Go);
         inventory = new InventoryTab(market);
@@ -206,6 +211,9 @@ public sealed class MainWindow : Window
     private readonly OceanTab ocean = new();
     private readonly UnlocksTab unlocks = new();
     private readonly WeeklyTab weekly;
+    private readonly BisTab bis = new();
+    private readonly MountFarmTab mountFarm;
+    private readonly FurnitureTab furniture;
     private string headerSearch = "";
     private bool focusHeaderSearch;
 
@@ -415,7 +423,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.6");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.7");
         }
 
         ImGui.EndChild();
@@ -666,6 +674,9 @@ public sealed class MainWindow : Window
             case MainTab.Ocean: ocean.Draw(); break;
             case MainTab.Unlocks: unlocks.Draw(); break;
             case MainTab.Weekly: weekly.Draw(); break;
+            case MainTab.Bis: bis.Draw(); break;
+            case MainTab.MountFarm: mountFarm.Draw(); break;
+            case MainTab.Furniture: furniture.Draw(); break;
         }
     }
 

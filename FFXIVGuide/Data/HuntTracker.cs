@@ -41,6 +41,7 @@ public sealed class HuntTracker
         FFXIVGuide.Windows.TimersTab.Tick();
         FFXIVGuide.Windows.GlamourTab.Tick();
         FFXIVGuide.Windows.WeeklyTab.Tick();
+        MapMarkers.Tick();
 
         if (!Plugin.Config.HuntAlerts || DateTime.Now < nextScan || !PlayerInfo.Ready)
             return;

@@ -20,6 +20,7 @@ public sealed class Configuration : IPluginConfiguration
     public List<string> WeatherAlerts { get; set; } = new();
     public List<string> ShoppingList { get; set; } = new();
     public List<int> PinnedTabs { get; set; } = new();
+    public HashSet<string> MapMarkerKinds { get; set; } = new() { "vista", "current" };
     public Dictionary<string, int> NotifyModes { get; set; } = new();
     public List<string> HomeTiles { get; set; } = new() { "story", "daily", "character", "progress", "timers", "ocean", "week" };
     public List<string> MiniBlocks { get; set; } = new() { "story", "daily", "fate", "target", "hunt", "timers" };

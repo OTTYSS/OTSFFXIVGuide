@@ -123,7 +123,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Commands.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | fish | blu | target | peek | mini | overlay | settings",
+            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | fish | blu | target | peek | mini | overlay | settings",
         });
 
         PluginInterface.UiBuilder.Draw += windows.Draw;
@@ -215,6 +215,9 @@ public sealed class Plugin : IDalamudPlugin
             "ocean" or "океан" => MainTab.Ocean,
             "unlocks" or "emotes" or "эмоции" => MainTab.Unlocks,
             "events" or "deliveries" or "house" or "события" => MainTab.Weekly,
+            "bis" => MainTab.Bis,
+            "mounts" or "маунты" => MainTab.MountFarm,
+            "furniture" or "мебель" => MainTab.Furniture,
             "overlay" => (MainTab?)null,
             _ => (MainTab?)null,
         };
