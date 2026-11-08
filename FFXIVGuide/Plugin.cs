@@ -27,6 +27,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IKeyState Keys { get; private set; } = null!;
     [PluginService] internal static IPartyList Party { get; private set; } = null!;
     [PluginService] internal static ITargetManager Targets { get; private set; } = null!;
+    [PluginService] internal static IDutyState DutyState { get; private set; } = null!;
     [PluginService] internal static Dalamud.Plugin.Services.INotificationManager Notifications { get; private set; } = null!;
 
     internal static Configuration Config { get; private set; } = null!;
@@ -123,7 +124,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Commands.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | fish | blu | target | peek | mini | overlay | settings",
+            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | fish | blu | target | peek | mini | overlay | settings",
         });
 
         PluginInterface.UiBuilder.Draw += windows.Draw;
@@ -135,6 +136,7 @@ public sealed class Plugin : IDalamudPlugin
         ClientState.TerritoryChanged += DutyRecorder.OnTerritoryChanged;
         Framework.Update += hunts.OnUpdate;
         Framework.Update += OnHotkey;
+        DutyState.DutyCompleted += FFXIVGuide.Data.RaidTier.OnDutyCompleted;
 
         // Если плагин включили уже внутри данжа — сразу показать механики
         if (ClientState.IsLoggedIn)
@@ -218,6 +220,8 @@ public sealed class Plugin : IDalamudPlugin
             "bis" => MainTab.Bis,
             "mounts" or "маунты" => MainTab.MountFarm,
             "furniture" or "мебель" => MainTab.Furniture,
+            "ventures" or "вылазки" => MainTab.Ventures,
+            "raid" or "лимиты" => MainTab.Weekly,
             "overlay" => (MainTab?)null,
             _ => (MainTab?)null,
         };
@@ -271,6 +275,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         Framework.Update -= hunts.OnUpdate;
         Framework.Update -= OnHotkey;
+        DutyState.DutyCompleted -= FFXIVGuide.Data.RaidTier.OnDutyCompleted;
         Instance = null;
         ClientState.Login -= OnLogin;
         ClientState.TerritoryChanged -= overlay.OnTerritoryChanged;

@@ -13,7 +13,7 @@ namespace FFXIVGuide.Windows;
 /// <summary>Сезонные события, Custom Deliveries и хаузинг (таймер сноса).</summary>
 internal sealed unsafe class WeeklyTab
 {
-    private static readonly string[] Sections = { "Сезонные события", "Custom Deliveries", "Хаузинг" };
+    private static readonly string[] Sections = { "Рейды и лимиты", "Сезонные события", "Custom Deliveries", "Хаузинг" };
     private int section;
     private readonly GuideData data;
 
@@ -21,16 +21,68 @@ internal sealed unsafe class WeeklyTab
 
     public void Draw()
     {
-        Theme.Header("События, поставки, дом", "Что идёт сейчас, кому сдавать поставки на этой неделе и когда заходить в дом");
+        Theme.Header("Рейды, события, поставки", "Недельные лимиты рейдов, сезонные события, поставки и дом");
         Theme.Chips("wksec", Sections, ref section);
         if (!ImGui.BeginChild("##weekly", Vector2.Zero)) { ImGui.EndChild(); return; }
         switch (section)
         {
-            case 0: DrawEvents(); break;
-            case 1: DrawDeliveries(); break;
+            case 0: DrawRaid(); break;
+            case 1: DrawEvents(); break;
+            case 2: DrawDeliveries(); break;
             default: DrawHousing(); break;
         }
         ImGui.EndChild();
+    }
+
+    // ───────────── Рейды и недельные лимиты ─────────────
+
+    private static void DrawRaid()
+    {
+        RaidTier.Build();
+        var left = RaidTier.NextReset - DateTime.UtcNow;
+        Theme.Panel("rtop", () =>
+        {
+            Theme.FaIcon(FontAwesomeIcon.Redo, Theme.Gold);
+            ImGui.SameLine();
+            ImGui.TextColored(Theme.Text, $"Недельный сброс через {(int)left.TotalDays} д. {left.Hours} ч. (вторник, {RaidTier.NextReset.ToLocalTime():HH:mm} по твоему времени)");
+        });
+
+        Theme.Panel("rtomes", () =>
+        {
+            Theme.SubHeader("Томестоны");
+            var (got, max, have) = RaidTier.Tomes();
+            var name = RaidTier.Tomestone == 0 ? "Текущие томестоны" : NameTranslations.Show(WikiView.ItemInfo(RaidTier.Tomestone).Name);
+            if (max > 0) Theme.Progress($"{name}: получено за неделю", got, max, got >= max ? Theme.Green : Theme.Gold);
+            Theme.Progress("В кошельке (максимум 2000)", have, RaidTier.TomestoneCap, have >= RaidTier.TomestoneCap - 100 ? Theme.Red : Theme.Blue);
+            if (have >= RaidTier.TomestoneCap - 100) ImGui.TextColored(Theme.Red, "Почти потолок — потрать, иначе новые сгорят.");
+        });
+
+        Theme.Panel("rfloors", () =>
+        {
+            Theme.SubHeader($"Савадж этой недели (iLvl {RaidTier.SavageIlvl})");
+            if (RaidTier.Floors.Count == 0) { ImGui.TextColored(Theme.TextDim, "Этажи текущего тира не найдены."); return; }
+            ImGui.TextColored(Theme.Gray, "Лут с сундука можно получить раз в неделю на каждом этаже. Плагин отмечает этаж, когда ты его закрыл.");
+            for (var i = 0; i < RaidTier.Floors.Count; i++)
+            {
+                var (cfc, name) = RaidTier.Floors[i];
+                var done = RaidTier.ClearedThisWeek(cfc);
+                Theme.FaIcon(done ? FontAwesomeIcon.CheckCircle : FontAwesomeIcon.Circle, done ? Theme.Green : Theme.Gray);
+                ImGui.SameLine();
+                ImGui.TextColored(done ? Theme.Green : Theme.Text, $"Этаж {i + 1}: {NameTranslations.Show(name)} — {(done ? "закрыт, лут уже взят" : "лут доступен")}");
+            }
+        });
+
+        Theme.Panel("rbooks", () =>
+        {
+            Theme.SubHeader("Книги саваджа");
+            if (RaidTier.Books.Count == 0) { ImGui.TextColored(Theme.TextDim, "Книги текущего тира не найдены."); return; }
+            ImGui.TextColored(Theme.Gray, "Одна книга за этаж в неделю. Меняются на вещи iLvl саваджа.");
+            for (var i = 0; i < RaidTier.Books.Count; i++)
+            {
+                var b = RaidTier.Books[i];
+                WikiView.ItemLine(b, 0, $"есть ×{PlayerInfo.ItemCount(b)}", $"rbk{i}");
+            }
+        });
     }
 
     // ───────────── Сезонные события ─────────────

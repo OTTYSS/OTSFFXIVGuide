@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures }
 
 public sealed class MainWindow : Window
 {
@@ -72,7 +72,7 @@ public sealed class MainWindow : Window
             (MainTab.GoldSaucer, FontAwesomeIcon.Dice, "Gold Saucer"),
             (MainTab.Island, FontAwesomeIcon.Umbrella, "Остров"),
             (MainTab.Tribes, FontAwesomeIcon.Handshake, "Племена"),
-            (MainTab.Weekly, FontAwesomeIcon.CalendarCheck, "События и поставки"),
+            (MainTab.Weekly, FontAwesomeIcon.CalendarCheck, "Рейды, события, поставки"),
         }),
         new("Персонаж", FontAwesomeIcon.ShieldAlt, new[]
         {
@@ -95,6 +95,7 @@ public sealed class MainWindow : Window
             (MainTab.Gather, FontAwesomeIcon.Leaf, "Сбор"),
             (MainTab.CollectableItems, FontAwesomeIcon.Box, "Коллекционные"),
             (MainTab.Voyages, FontAwesomeIcon.Ship, "Субмарины"),
+            (MainTab.Ventures, FontAwesomeIcon.UserTie, "Вылазки ретейнеров"),
         }),
         new("Время", FontAwesomeIcon.Clock, new[]
         {
@@ -134,6 +135,7 @@ public sealed class MainWindow : Window
         weekly = new WeeklyTab(data);
         mountFarm = new MountFarmTab(data);
         furniture = new FurnitureTab(market);
+        ventures = new VenturesTab(market);
         story = new StoryTab(data, quests, duties);
         search = new SearchTab(data, duties, quests, items, Go);
         inventory = new InventoryTab(market);
@@ -214,6 +216,7 @@ public sealed class MainWindow : Window
     private readonly BisTab bis = new();
     private readonly MountFarmTab mountFarm;
     private readonly FurnitureTab furniture;
+    private readonly VenturesTab ventures;
     private string headerSearch = "";
     private bool focusHeaderSearch;
 
@@ -423,7 +426,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.7");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.8");
         }
 
         ImGui.EndChild();
@@ -677,6 +680,7 @@ public sealed class MainWindow : Window
             case MainTab.Bis: bis.Draw(); break;
             case MainTab.MountFarm: mountFarm.Draw(); break;
             case MainTab.Furniture: furniture.Draw(); break;
+            case MainTab.Ventures: ventures.Draw(); break;
         }
     }
 

@@ -109,7 +109,73 @@ internal sealed class BisTab
                 }
                 sets.Add(new BisSet(s.TryGetProperty("name", out var n) ? n.GetString() ?? "Сет" : "Сет", slots));
             }
+        if (sets.Count == 0 && r.TryGetProperty("items", out _))
+        {
+            // Ссылка на один сет (embed): корень сам является сетом
+            var one = ParseXivgear("{\"sets\":[" + r.GetRawText() + "]}").Sets;
+            var title = r.TryGetProperty("name", out var n1) ? n1.GetString() ?? "Сет" : "Сет";
+            return new Sheet(title, one);
+        }
         return new Sheet(r.TryGetProperty("name", out var nm) ? nm.GetString() ?? "" : "", sets);
+    }
+
+    // ───────────── Balance (thebalanceffxiv.com) ─────────────
+
+    private static readonly Dictionary<string, string> BalanceSlug = new()
+    {
+        ["pld"] = "tanks/paladin", ["war"] = "tanks/warrior", ["drk"] = "tanks/dark-knight", ["gnb"] = "tanks/gunbreaker",
+        ["whm"] = "healers/white-mage", ["sch"] = "healers/scholar", ["ast"] = "healers/astrologian", ["sge"] = "healers/sage",
+        ["mnk"] = "melee/monk", ["drg"] = "melee/dragoon", ["nin"] = "melee/ninja", ["sam"] = "melee/samurai",
+        ["rpr"] = "melee/reaper", ["vpr"] = "melee/viper",
+        ["brd"] = "ranged/bard", ["mch"] = "ranged/machinist", ["dnc"] = "ranged/dancer",
+        ["blm"] = "casters/black-mage", ["smn"] = "casters/summoner", ["rdm"] = "casters/red-mage", ["pct"] = "casters/pictomancer",
+    };
+
+    /// <summary>Ссылки xivgear со страницы BiS Balance: сначала целые листы, потом отдельные сеты.</summary>
+    private static List<string> ParseBalance(string html)
+    {
+        var res = new List<(string Id, bool Embed)>();
+        foreach (Match m in Regex.Matches(Uri.UnescapeDataString(html), @"xivgear\.app/\?page=(embed\|)?sl\|([0-9a-f\-]{36})", RegexOptions.IgnoreCase))
+        {
+            var id = m.Groups[2].Value.ToLowerInvariant();
+            if (res.All(x => x.Id != id)) res.Add((id, m.Groups[1].Success));
+        }
+        return res.OrderBy(x => x.Embed).Select(x => x.Id).ToList();
+    }
+
+    private void DrawBalance(string abbr)
+    {
+        if (!BalanceSlug.TryGetValue(abbr, out var slug)) return;
+        var pageUrl = $"https://www.thebalanceffxiv.com/jobs/{slug}/best-in-slot/";
+        Theme.SubHeader($"BiS от The Balance для {abbr.ToUpperInvariant()}");
+        var ids = Fetch(pageUrl, ParseBalance);
+        if (ids is null)
+        {
+            if (Failed(pageUrl))
+            {
+                ImGui.TextColored(Theme.Red, "Не удалось открыть страницу Balance.");
+                ImGui.SameLine();
+                if (ImGui.SmallButton("Повторить##balr")) Retry(pageUrl);
+            }
+            else ImGui.TextColored(Theme.TextDim, "Загружаю страницу Balance…");
+            return;
+        }
+        if (ids.Count == 0) { ImGui.TextColored(Theme.TextDim, "На странице Balance ссылок не нашлось."); return; }
+        foreach (var id in ids.Take(10))
+        {
+            var url = $"https://api.xivgear.app/shortlink/{id}";
+            var sh = Fetch<Sheet>(url, ParseXivgear);
+            string label;
+            if (sh is not null) label = sh.Sets.Count > 1 ? $"{sh.Title} ({sh.Sets.Count} сетов)" : sh.Title.Length > 0 ? sh.Title : "Сет";
+            else if (Failed(url)) continue;
+            else label = "загружаю…";
+            if (ImGui.Selectable($"{label}##bal{id}", loadedKey == url) && sh is not null)
+            {
+                loadedKey = url;
+                setIndex = 0;
+                error = null;
+            }
+        }
     }
 
     /// <summary>Etro: { name, weapon, offHand, head, body, hands, legs, feet, ears, neck, wrists, fingerL, fingerR }.</summary>
@@ -165,7 +231,7 @@ internal sealed class BisTab
                 if (ImGui.SmallButton("Повторить##bisidx")) Retry(indexUrl);
             }
             else if (presets is null) ImGui.TextColored(Theme.TextDim, "Загружаю список…");
-            else if (presets.Count == 0) ImGui.TextColored(Theme.TextDim, "Для этой профессии готовых наборов нет (у хилеров их публикует Balance в виде ссылок) — вставь ссылку ниже.");
+            else if (presets.Count == 0) ImGui.TextColored(Theme.TextDim, "У xivgear готовых наборов для этой профессии нет — смотри наборы Balance ниже.");
             else
                 foreach (var (path, title) in presets.Take(8))
                 {
@@ -176,6 +242,8 @@ internal sealed class BisTab
                         error = null;
                     }
                 }
+            ImGui.Dummy(new Vector2(0, 4 * Theme.S));
+            DrawBalance(abbr);
             ImGui.Dummy(new Vector2(0, 4 * Theme.S));
             ImGui.SetNextItemWidth(Math.Min(520 * Theme.S, ImGui.GetContentRegionAvail().X - 120 * Theme.S));
             ImGui.InputTextWithHint("##bislink", "Ссылка xivgear.app или etro.gg/gearset/…", ref link, 300);
@@ -237,6 +305,8 @@ internal sealed class BisTab
             if (have > 0) ImGui.TextColored(Theme.Blue, $"Ещё {have} вещей уже есть в сумках или у ретейнеров — просто надень.");
         });
 
+        DrawPlan(rows.Where(r => !equipped.Contains(r.Item) && Owned(r.Item) == 0).Select(r => (r.Name, r.Item)).ToList());
+
         Theme.Panel("bslots", () =>
         {
             foreach (var (slot, item, materia) in rows)
@@ -248,6 +318,123 @@ internal sealed class BisTab
                 WikiView.ItemLine(item, 0, status, "bis" + slot);
                 if (materia.Count > 0)
                     ImGui.TextColored(Theme.Gray, "    Материя: " + string.Join(", ", materia.GroupBy(m => m).Select(g => $"{(g.Count() > 1 ? g.Count() + "× " : "")}{NameTranslations.Show(WikiView.ItemInfo(g.Key).Name)}")));
+            }
+        });
+    }
+
+    // ───────────── План сбора ─────────────
+
+    private static int Owned(uint item) => PlayerInfo.ItemCount(item) + RetainerTracker.CountOf(item).Total;
+
+    /// <summary>Что купить за томестоны, за книги, чем улучшить и что выбить — и сколько недель это займёт.</summary>
+    private static void DrawPlan(List<(string Slot, uint Item)> missing)
+    {
+        if (missing.Count == 0) return;
+        RaidTier.Build();
+        var tomeBuys = new List<(string Slot, uint Item, uint Cost)>();
+        var bookBuys = new List<(string Slot, uint Item, uint Book, uint Cost)>();
+        var upgrades = new Dictionary<uint, int>();
+        var drops = new List<(string Slot, uint Item)>();
+        var tomeNeed = 0L;
+        var bookNeed = new Dictionary<uint, long>();
+
+        foreach (var (slot, item) in missing)
+        {
+            var ex = RaidTier.Exchange(item);
+            if (ex is null) { drops.Add((slot, item)); continue; }
+            var book = ex.FirstOrDefault(c => RaidTier.Books.Contains(c.Item));
+            if (book is not null && ex.Count == 1)
+            {
+                bookBuys.Add((slot, item, book.Item, book.Amount));
+                bookNeed[book.Item] = bookNeed.GetValueOrDefault(book.Item) + book.Amount;
+                continue;
+            }
+            var tome = ex.FirstOrDefault(c => c.Tomestone);
+            if (tome is not null && ex.Count == 1)
+            {
+                tomeBuys.Add((slot, item, tome.Amount));
+                tomeNeed += tome.Amount;
+                continue;
+            }
+            // Улучшенная вещь: базовая вещь за томестоны + материал из саваджа
+            var handled = false;
+            foreach (var c in ex)
+            {
+                if (c.Tomestone) continue;
+                var sub = RaidTier.Exchange(c.Item);
+                var tomeOfSub = sub?.FirstOrDefault(x => x.Tomestone);
+                if (tomeOfSub is not null && WikiView.ItemInfo(c.Item).Ilvl > 1)
+                {
+                    if (Owned(c.Item) == 0)
+                    {
+                        tomeBuys.Add((slot, c.Item, tomeOfSub.Amount));
+                        tomeNeed += tomeOfSub.Amount;
+                    }
+                }
+                else upgrades[c.Item] = upgrades.GetValueOrDefault(c.Item) + (int)c.Amount;
+                handled = true;
+            }
+            if (!handled) drops.Add((slot, item));
+        }
+
+        // Материалы улучшения можно выменять на книги — учитываем в неделях
+        foreach (var (mat, n) in upgrades)
+        {
+            var lack = Math.Max(0, n - Owned(mat));
+            if (lack == 0) continue;
+            var viaBook = RaidTier.Exchange(mat)?.FirstOrDefault(c => RaidTier.Books.Contains(c.Item));
+            if (viaBook is not null) bookNeed[viaBook.Item] = bookNeed.GetValueOrDefault(viaBook.Item) + viaBook.Amount * lack;
+        }
+
+        var (_, weekly, tomesHave) = RaidTier.Tomes();
+        var perWeek = weekly > 0 ? weekly : 450;
+        var tomeWeeks = tomeNeed <= tomesHave ? 0 : (int)Math.Ceiling((tomeNeed - tomesHave) / (double)perWeek);
+        var bookWeeks = bookNeed.Count == 0 ? 0 : (int)bookNeed.Max(b => Math.Max(0, b.Value - Owned(b.Key)));
+        var weeks = Math.Max(tomeWeeks, bookWeeks);
+
+        Theme.Panel("bplan", () =>
+        {
+            Theme.SubHeader("План сбора");
+            ImGui.TextColored(Theme.Text, weeks == 0
+                ? "Всё, что покупается за валюту, можно взять уже сейчас."
+                : $"Примерно {weeks} нед.: полный лимит томестонов и одна книга с каждого этажа в неделю.");
+            ImGui.TextColored(Theme.Gray, "Обычно сначала берут оружие, потом тело и ноги — они дают больше всего статов.");
+
+            if (tomeBuys.Count > 0)
+            {
+                ImGui.Dummy(new Vector2(0, 3 * Theme.S));
+                var tname = RaidTier.Tomestone == 0 ? "томестоны" : NameTranslations.Show(WikiView.ItemInfo(RaidTier.Tomestone).Name);
+                ImGui.TextColored(Theme.Gold, $"За томестоны: нужно {tomeNeed:N0} ({tname}), есть {tomesHave:N0}" + (tomeWeeks > 0 ? $" — ~{tomeWeeks} нед." : ""));
+                foreach (var (slot, item, cost) in tomeBuys.OrderByDescending(t => t.Cost))
+                    WikiView.ItemLine(item, 0, $"{slot} · {cost} томестонов", "bpt" + slot + item);
+            }
+            if (bookBuys.Count > 0)
+            {
+                ImGui.Dummy(new Vector2(0, 3 * Theme.S));
+                ImGui.TextColored(Theme.Gold, "За книги саваджа:");
+                foreach (var (slot, item, book, cost) in bookBuys.OrderBy(b => RaidTier.Books.IndexOf(b.Book)))
+                {
+                    var have = Owned(book);
+                    WikiView.ItemLine(item, 0, $"{slot} · {cost} книг этажа {RaidTier.Books.IndexOf(book) + 1}, есть {have}" + (have >= cost ? " — можно купить" : ""), "bpb" + slot + item);
+                }
+            }
+            if (upgrades.Count > 0)
+            {
+                ImGui.Dummy(new Vector2(0, 3 * Theme.S));
+                ImGui.TextColored(Theme.Gold, "Улучшение томестоновых вещей:");
+                foreach (var (mat, n) in upgrades)
+                {
+                    var viaBook = RaidTier.Exchange(mat)?.FirstOrDefault(c => RaidTier.Books.Contains(c.Item));
+                    var how = viaBook is not null ? $" · или {viaBook.Amount} книг этажа {RaidTier.Books.IndexOf(viaBook.Item) + 1} за штуку" : "";
+                    WikiView.ItemLine(mat, n, $"есть {Owned(mat)}{how}", "bpu" + mat);
+                }
+            }
+            if (drops.Count > 0)
+            {
+                ImGui.Dummy(new Vector2(0, 3 * Theme.S));
+                ImGui.TextColored(Theme.Gold, "Только выбить или скрафтить:");
+                foreach (var (slot, item) in drops)
+                    WikiView.ItemLine(item, 0, $"{slot} · {SourceHint(item)}", "bpd" + slot + item);
             }
         });
     }

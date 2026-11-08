@@ -28,6 +28,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool SetupDone { get; set; }
     public DateTime? HouseWarned { get; set; }
     public List<uint> SeenFestivals { get; set; } = new();
+    public Dictionary<uint, DateTime> SavageClears { get; set; } = new();
     public DateTime? HouseVisitPersonal { get; set; }
     public DateTime? HouseVisitFc { get; set; }
     /// <summary>Дополнять офлайн-базу данными Garland Tools (дроп мобов, лут по боссам).</summary>
