@@ -19,6 +19,10 @@ public sealed class RetainerSnapshot
     public string Name { get; set; } = "";
     public DateTime Updated { get; set; }
     public List<StoredItem> Items { get; set; } = new();
+    /// <summary>Надетое (по слотам игры: 0 оружие, 1 вторая рука, 2 голова … 12 кольцо), пусто — не снято.</summary>
+    public List<StoredItem> Equipped { get; set; } = new();
+    public byte ClassJob { get; set; }
+    public byte Level { get; set; }
 }
 
 /// <summary>
@@ -81,14 +85,28 @@ public static unsafe class RetainerTracker
         }
         if (!loaded) return;
 
+        var equipped = new List<StoredItem>();
+        var eq = im->GetInventoryContainer(InventoryType.RetainerEquippedItems);
+        if (eq != null)
+            for (var i = 0; i < eq->Size; i++)
+            {
+                var s = eq->GetInventorySlot(i);
+                equipped.Add(s == null ? new StoredItem() : new StoredItem { ItemId = s->GetBaseItemId(), Quantity = 1, Hq = s->IsHighQuality() });
+            }
+
         var key = active->RetainerId.ToString();
         var name = active->NameString;
         var cfg = Plugin.Config;
-        if (cfg.Retainers.TryGetValue(key, out var old) && old.Items.Count == items.Count
-            && old.Items.Zip(items).All(p => p.First.ItemId == p.Second.ItemId && p.First.Quantity == p.Second.Quantity))
+        static bool Same(List<StoredItem> a, List<StoredItem> b) =>
+            a.Count == b.Count && a.Zip(b).All(p => p.First.ItemId == p.Second.ItemId && p.First.Quantity == p.Second.Quantity && p.First.Hq == p.Second.Hq);
+        if (cfg.Retainers.TryGetValue(key, out var old) && Same(old.Items, items) && Same(old.Equipped, equipped)
+            && old.ClassJob == active->ClassJob && old.Level == active->Level)
             return;
 
-        cfg.Retainers[key] = new RetainerSnapshot { Name = name, Updated = DateTime.Now, Items = items };
+        cfg.Retainers[key] = new RetainerSnapshot
+        {
+            Name = name, Updated = DateTime.Now, Items = items, Equipped = equipped, ClassJob = active->ClassJob, Level = active->Level,
+        };
         cfg.Save();
     }
 }

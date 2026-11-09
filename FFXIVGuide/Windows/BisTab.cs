@@ -20,7 +20,7 @@ namespace FFXIVGuide.Windows;
 /// </summary>
 internal sealed class BisTab
 {
-    private sealed record BisSet(string Name, Dictionary<string, (uint Item, List<uint> Materia)> Slots);
+    private sealed record BisSet(string Name, Dictionary<string, (uint Item, List<uint> Materia)> Slots, uint Food = 0);
     private sealed record Sheet(string Title, List<BisSet> Sets);
 
     private static readonly HttpClient Http = Net.Create(TimeSpan.FromSeconds(30));
@@ -107,7 +107,8 @@ internal sealed class BisTab
                         : new List<uint>();
                     slots[p.Name] = (iid, mat);
                 }
-                sets.Add(new BisSet(s.TryGetProperty("name", out var n) ? n.GetString() ?? "Сет" : "Сет", slots));
+                var food = s.TryGetProperty("food", out var fd) && fd.ValueKind == JsonValueKind.Number && fd.TryGetUInt32(out var fid) ? fid : 0u;
+                sets.Add(new BisSet(s.TryGetProperty("name", out var n) ? n.GetString() ?? "Сет" : "Сет", slots, food));
             }
         if (sets.Count == 0 && r.TryGetProperty("items", out _))
         {
@@ -305,6 +306,7 @@ internal sealed class BisTab
             if (have > 0) ImGui.TextColored(Theme.Blue, $"Ещё {have} вещей уже есть в сумках или у ретейнеров — просто надень.");
         });
 
+        DrawConsumables(set, rows.Select(r => r.Materia).ToList());
         DrawPlan(rows.Where(r => !equipped.Contains(r.Item) && Owned(r.Item) == 0).Select(r => (r.Name, r.Item)).ToList());
 
         Theme.Panel("bslots", () =>
@@ -318,6 +320,78 @@ internal sealed class BisTab
                 WikiView.ItemLine(item, 0, status, "bis" + slot);
                 if (materia.Count > 0)
                     ImGui.TextColored(Theme.Gray, "    Материя: " + string.Join(", ", materia.GroupBy(m => m).Select(g => $"{(g.Count() > 1 ? g.Count() + "× " : "")}{NameTranslations.Show(WikiView.ItemInfo(g.Key).Name)}")));
+            }
+        });
+    }
+
+    // ───────────── Материя и расходники ─────────────
+
+    private static int foodCount = 10, potCount = 10;
+    private static readonly Dictionary<uint, uint> potionByJob = new();
+
+    /// <summary>Лучшее зелье основного стата профессии (Grade N Gemdraught of …).</summary>
+    private static uint PotionFor(uint jobId)
+    {
+        if (potionByJob.TryGetValue(jobId, out var v)) return v;
+        uint best = 0;
+        try
+        {
+            var job = Plugin.Data.GetExcelSheet<ClassJob>().GetRowOrDefault(jobId);
+            var stat = job is null ? "" : Plugin.Data.GetExcelSheet<BaseParam>(Dalamud.Game.ClientLanguage.English)
+                .GetRowOrDefault(job.Value.PrimaryStat)?.Name.ExtractText() ?? "";
+            if (stat.Length > 0)
+                best = Plugin.Data.GetExcelSheet<Item>(Dalamud.Game.ClientLanguage.English)
+                    .Where(i => i.Name.ExtractText().EndsWith("Gemdraught of " + stat, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(i => i.LevelItem.RowId).Select(i => i.RowId).FirstOrDefault();
+        }
+        catch (Exception e) { Plugin.Log.Warning(e, "BiS: не удалось найти зелье"); }
+        return potionByJob[jobId] = best;
+    }
+
+    /// <summary>Сколько материи нужно на весь сет, еда сета и зелья — с кнопкой «в покупки».</summary>
+    private static void DrawConsumables(BisSet set, List<List<uint>> materiaPerSlot)
+    {
+        var materia = materiaPerSlot.SelectMany(m => m).GroupBy(m => m).Select(g => (Item: g.Key, Need: g.Count())).OrderByDescending(x => x.Need).ToList();
+        var jobId = Plugin.PlayerState.ClassJob.RowId;
+        var potion = PotionFor(jobId);
+        if (materia.Count == 0 && set.Food == 0 && potion == 0) return;
+
+        Theme.Panel("bcons", () =>
+        {
+            Theme.SubHeader("Материя и расходники");
+            ImGui.TextColored(Theme.Gray, "Материя — на весь сет по раскладке из листа. «Есть» считает сумки и ретейнеров (уже вставленная в вещи не считается).");
+            var shopping = new List<(uint Item, int Qty)>();
+            foreach (var (item, need) in materia)
+            {
+                var have = Owned(item);
+                var lack = Math.Max(0, need - have);
+                if (lack > 0) shopping.Add((item, lack));
+                WikiView.ItemLine(item, need, lack == 0 ? $"есть {have} ✓" : $"есть {have}, не хватает {lack}", "bcm" + item);
+            }
+            if (set.Food != 0)
+            {
+                ImGui.SetNextItemWidth(90 * Theme.S);
+                ImGui.InputInt("штук еды##bcf", ref foodCount);
+                foodCount = Math.Clamp(foodCount, 0, 999);
+                var have = Owned(set.Food);
+                if (foodCount > have) shopping.Add((set.Food, foodCount - have));
+                WikiView.ItemLine(set.Food, foodCount, $"еда из сета · есть {have}", "bcfood");
+            }
+            if (potion != 0)
+            {
+                ImGui.SetNextItemWidth(90 * Theme.S);
+                ImGui.InputInt("штук зелий##bcp", ref potCount);
+                potCount = Math.Clamp(potCount, 0, 999);
+                var have = Owned(potion);
+                if (potCount > have) shopping.Add((potion, potCount - have));
+                WikiView.ItemLine(potion, potCount, $"зелье основного стата · есть {have}", "bcpot");
+            }
+            ImGui.Dummy(new Vector2(0, 3 * Theme.S));
+            if (shopping.Count == 0) ImGui.TextColored(Theme.Green, "Всего хватает.");
+            else if (ImGui.Button($"Добавить недостающее в «Покупки» ({shopping.Count} поз.)##bcadd"))
+            {
+                foreach (var (item, qty) in shopping) ShoppingTab.Add(item, qty);
+                Plugin.Chat.Print($"[OTSFFXIVGuide] В список покупок добавлено позиций: {shopping.Count}.");
             }
         });
     }

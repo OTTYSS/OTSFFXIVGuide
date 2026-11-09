@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult }
 
 public sealed class MainWindow : Window
 {
@@ -55,6 +55,7 @@ public sealed class MainWindow : Window
             (MainTab.Recap, FontAwesomeIcon.Skull, "Разбор боёв"),
             (MainTab.Deep, FontAwesomeIcon.Dragon, "Deep Dungeons"),
             (MainTab.Relics, FontAwesomeIcon.Khanda, "Реликвии, Eureka, Bozja"),
+            (MainTab.Occult, FontAwesomeIcon.HatWizard, "Occult Crescent"),
         }),
         new("Вики", FontAwesomeIcon.BookOpen, new[]
         {
@@ -135,7 +136,8 @@ public sealed class MainWindow : Window
         weekly = new WeeklyTab(data);
         mountFarm = new MountFarmTab(data);
         furniture = new FurnitureTab(market);
-        ventures = new VenturesTab(market);
+        ventures = new VenturesTab(data, market);
+        occult = new OccultTab();
         story = new StoryTab(data, quests, duties);
         search = new SearchTab(data, duties, quests, items, Go);
         inventory = new InventoryTab(market);
@@ -217,6 +219,7 @@ public sealed class MainWindow : Window
     private readonly MountFarmTab mountFarm;
     private readonly FurnitureTab furniture;
     private readonly VenturesTab ventures;
+    private readonly OccultTab occult;
     private string headerSearch = "";
     private bool focusHeaderSearch;
 
@@ -426,7 +429,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.8");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.9");
         }
 
         ImGui.EndChild();
@@ -681,6 +684,7 @@ public sealed class MainWindow : Window
             case MainTab.MountFarm: mountFarm.Draw(); break;
             case MainTab.Furniture: furniture.Draw(); break;
             case MainTab.Ventures: ventures.Draw(); break;
+            case MainTab.Occult: occult.Draw(); break;
         }
     }
 
