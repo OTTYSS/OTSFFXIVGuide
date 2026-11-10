@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic }
 
 public sealed class MainWindow : Window
 {
@@ -42,7 +42,7 @@ public sealed class MainWindow : Window
 
     internal static readonly Hub[] Hubs =
     {
-        new("Обзор", FontAwesomeIcon.Compass, new[] { (MainTab.Home, FontAwesomeIcon.Compass, "Обзор") }),
+        new("Обзор", FontAwesomeIcon.Compass, new[] { (MainTab.Home, FontAwesomeIcon.Compass, "Обзор"), (MainTab.Progress, FontAwesomeIcon.ChartPie, "Прогресс аккаунта") }),
         new("Поиск", FontAwesomeIcon.Search, new[] { (MainTab.Search, FontAwesomeIcon.Search, "Поиск") }),
         new("Сюжет и квесты", FontAwesomeIcon.Book, new[]
         {
@@ -56,6 +56,8 @@ public sealed class MainWindow : Window
             (MainTab.Deep, FontAwesomeIcon.Dragon, "Deep Dungeons"),
             (MainTab.Relics, FontAwesomeIcon.Khanda, "Реликвии, Eureka, Bozja"),
             (MainTab.Occult, FontAwesomeIcon.HatWizard, "Occult Crescent"),
+            (MainTab.Variant, FontAwesomeIcon.Route, "Variant и Criterion"),
+            (MainTab.PvP, FontAwesomeIcon.FistRaised, "PvP"),
         }),
         new("Вики", FontAwesomeIcon.BookOpen, new[]
         {
@@ -100,6 +102,8 @@ public sealed class MainWindow : Window
             (MainTab.Currencies, FontAwesomeIcon.Coins, "Валюты"),
             (MainTab.Shopping, FontAwesomeIcon.ShoppingCart, "Покупки"),
             (MainTab.Craft, FontAwesomeIcon.Hammer, "Крафт"),
+            (MainTab.RecipeBooks, FontAwesomeIcon.BookOpen, "Книги рецептов"),
+            (MainTab.Cosmic, FontAwesomeIcon.Rocket, "Cosmic Exploration"),
             (MainTab.Gather, FontAwesomeIcon.Leaf, "Сбор"),
             (MainTab.CollectableItems, FontAwesomeIcon.Box, "Коллекционные"),
             (MainTab.Voyages, FontAwesomeIcon.Ship, "Субмарины"),
@@ -152,6 +156,11 @@ public sealed class MainWindow : Window
         sranks = new SRanksTab();
         salvage = new SalvageTab();
         chocoGarden = new ChocoboGardenTab();
+        progress = new ProgressTab(data, Go);
+        recipeBooks = new RecipeBooksTab(market);
+        pvp = new PvPTab();
+        variant = new VariantTab(data);
+        cosmic = new CosmicTab(data);
         story = new StoryTab(data, quests, duties);
         search = new SearchTab(data, duties, quests, items, Go);
         inventory = new InventoryTab(market);
@@ -241,6 +250,11 @@ public sealed class MainWindow : Window
     private readonly SRanksTab sranks;
     private readonly SalvageTab salvage;
     private readonly ChocoboGardenTab chocoGarden;
+    private readonly ProgressTab progress;
+    private readonly RecipeBooksTab recipeBooks;
+    private readonly PvPTab pvp;
+    private readonly VariantTab variant;
+    private readonly CosmicTab cosmic;
     private string headerSearch = "";
     private bool focusHeaderSearch;
 
@@ -450,7 +464,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.11");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.12");
         }
 
         ImGui.EndChild();
@@ -713,6 +727,11 @@ public sealed class MainWindow : Window
             case MainTab.SRanks: sranks.Draw(); break;
             case MainTab.Salvage: salvage.Draw(); break;
             case MainTab.ChocoboGarden: chocoGarden.Draw(); break;
+            case MainTab.Progress: progress.Draw(); break;
+            case MainTab.RecipeBooks: recipeBooks.Draw(); break;
+            case MainTab.PvP: pvp.Draw(); break;
+            case MainTab.Variant: variant.Draw(); break;
+            case MainTab.Cosmic: cosmic.Draw(); break;
         }
     }
 
