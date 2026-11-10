@@ -13,7 +13,7 @@ namespace FFXIVGuide.Windows;
 /// <summary>Сезонные события, Custom Deliveries и хаузинг (таймер сноса).</summary>
 internal sealed unsafe class WeeklyTab
 {
-    private static readonly string[] Sections = { "Рейды и лимиты", "Сезонные события", "Custom Deliveries", "Хаузинг" };
+    private static readonly string[] Sections = { "Рейды и лимиты", "Wondrous Tails", "Сезонные события", "Custom Deliveries", "Хаузинг" };
     private int section;
     private readonly GuideData data;
 
@@ -27,8 +27,9 @@ internal sealed unsafe class WeeklyTab
         switch (section)
         {
             case 0: DrawRaid(); break;
-            case 1: DrawEvents(); break;
-            case 2: DrawDeliveries(); break;
+            case 1: DrawBingo(); break;
+            case 2: DrawEvents(); break;
+            case 3: DrawDeliveries(); break;
             default: DrawHousing(); break;
         }
         ImGui.EndChild();
@@ -82,6 +83,85 @@ internal sealed unsafe class WeeklyTab
                 var b = RaidTier.Books[i];
                 WikiView.ItemLine(b, 0, $"есть ×{PlayerInfo.ItemCount(b)}", $"rbk{i}");
             }
+        });
+    }
+
+    // ───────────── Wondrous Tails ─────────────
+
+    /// <summary>Подсказка, как быстрее закрыть задание журнала, по его типу.</summary>
+    private static string BingoHint(uint type, string text) => type switch
+    {
+        0 => "Конкретный бой — через Duty Finder; старый контент можно пройти в Unrestricted Party или своей группой без синка.",
+        1 or 2 or 5 or 6 => "Любой данж из этого диапазона — бери самый короткий или рулетку Leveling/High-level.",
+        3 when text.Contains("Treasure") => "Treasure Dungeon: открой портал из сундука карты сокровищ (или вступи в группу на Party Finder).",
+        3 when text.Contains("Crystalline") => "Crystalline Conflict: один матч, победа не обязательна.",
+        3 when text.Contains("Deep") => "Deep Dungeon: пройди 10 этажей (например Palace of the Dead 1–10).",
+        3 when text.Contains("Frontline") => "Frontline: один бой, победа не обязательна.",
+        3 when text.Contains("Rival") => "Rival Wings: один бой, победа не обязательна.",
+        4 => "Старый рейд: собери группу без синка (Unrestricted Party) — проходится очень быстро.",
+        7 => "Любой триал из диапазона — подойдёт самый простой normal-триал.",
+        8 => "Любой альянс-рейд из диапазона — через Duty Finder или рулетку Alliance Raids.",
+        9 => "Любой normal-рейд из диапазона — через Duty Finder или рулетку Normal Raids.",
+        _ => "",
+    };
+
+    private unsafe void DrawBingo()
+    {
+        var ps = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
+        if (ps == null || !PlayerInfo.Ready) { Theme.Panel("wtnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!ps->HasWeeklyBingoJournal || ps->IsWeeklyBingoExpired())
+        {
+            Theme.EmptyState(FontAwesomeIcon.Book, "Журнала нет", "Возьми журнал Wondrous Tails у Khloe Aliapoh в Idyllshire (5.7, 7.0). Он даётся раз в неделю, сброс во вторник.");
+            return;
+        }
+
+        var stickers = ps->WeeklyBingoNumPlacedStickers;
+        Theme.Panel("wttop", () =>
+        {
+            Theme.Progress("Наклеек в журнале", stickers, 9, stickers >= 9 ? Theme.Green : Theme.Gold);
+            ImGui.TextColored(Theme.TextDim, $"Шансов на перестановку: {ps->WeeklyBingoNumSecondChancePoints}. Журнал действует до {ps->WeeklyBingoExpireDateTime.ToLocalTime():dd.MM HH:mm}.");
+            ImGui.TextColored(Theme.Gray, "Задание закрывается после прохождения; потом нажми на него в журнале, чтобы поставить наклейку. 9 наклеек — сдай журнал Khloe за награду.");
+        });
+
+        var sheet = Plugin.Data.GetExcelSheet<WeeklyBingoOrderData>();
+        var orders = ps->WeeklyBingoOrderData.ToArray();
+        var statuses = Enumerable.Range(0, orders.Length).Select(i => ps->GetWeeklyBingoTaskStatus(i)).ToArray();
+        Theme.Grid("wtgrid", orders.Length, 360f, i =>
+        {
+            var row = sheet.GetRowOrDefault(orders[i]);
+            var status = statuses[i];
+            Theme.Panel($"wt{i}", () =>
+            {
+                if (row is not { } o) { ImGui.TextColored(Theme.Gray, $"Задание {i + 1}"); return; }
+                var (label, color) = status switch
+                {
+                    FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.WeeklyBingoTaskStatus.Claimed => ("наклейка стоит ✓", Theme.Green),
+                    FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.WeeklyBingoTaskStatus.Claimable => ("пройдено — поставь наклейку", Theme.Blue),
+                    _ => ("не пройдено", Theme.Text),
+                };
+                string name;
+                DutyEntry? duty = null;
+                if (o.Type == 0)
+                {
+                    duty = data.Duties.FirstOrDefault(d => d.InstanceContentId == o.Data.RowId);
+                    name = duty is not null ? NameTranslations.Show(duty.Name) : $"Бой #{o.Data.RowId}";
+                }
+                else name = o.Text.ValueNullable?.Description.ExtractText() ?? $"Задание {i + 1}";
+                ImGui.TextColored(color, name);
+                ImGui.TextColored(color == Theme.Text ? Theme.TextDim : color, label);
+                if (duty is not null)
+                    ImGui.TextColored(Theme.Gray, $"{duty.Type} · ур. {duty.Level}" + (duty.ItemLevel > 0 ? $" · iLvl {duty.ItemLevel}" : "") + (PlayerInfo.IsDutyUnlocked(duty) ? "" : " · не открыт"));
+                if (status == FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.WeeklyBingoTaskStatus.Open)
+                {
+                    var hint = BingoHint(o.Type, o.Text.ValueNullable?.Description.ExtractText() ?? "");
+                    if (hint.Length > 0)
+                    {
+                        ImGui.PushTextWrapPos(0);
+                        ImGui.TextColored(Theme.Gray, hint);
+                        ImGui.PopTextWrapPos();
+                    }
+                }
+            });
         });
     }
 

@@ -15,7 +15,7 @@ namespace FFXIVGuide.Windows;
 /// <summary>Gold Saucer: подсказчик Mini Cactpot и справочник Triple Triad. Только подсказывает.</summary>
 internal sealed unsafe class GoldSaucerTab
 {
-    private static readonly string[] Sections = { "Mini Cactpot", "Карты Triple Triad", "Противники Triple Triad" };
+    private static readonly string[] Sections = { "Mini Cactpot", "Fashion Report", "Карты Triple Triad", "Противники Triple Triad" };
     private int section;
 
     public void Draw()
@@ -25,8 +25,9 @@ internal sealed unsafe class GoldSaucerTab
         switch (section)
         {
             case 0: DrawCactpot(); break;
-            case 1: DrawCards(); break;
-            case 2: DrawNpcs(); break;
+            case 1: DrawFashion(); break;
+            case 2: DrawCards(); break;
+            case 3: DrawNpcs(); break;
         }
     }
 
@@ -144,6 +145,84 @@ internal sealed unsafe class GoldSaucerTab
             }
         }
         return (lineEv, cellEv);
+    }
+
+    // ───────────── Fashion Report ─────────────
+
+    private static unsafe void DrawFashion()
+    {
+        // Неделя: вторник 08:00 UTC — новая тема; пятница 08:00 UTC — начало оценки
+        var reset = RaidTier.LastReset;
+        var judging = reset.AddDays(3);
+        var now = DateTime.UtcNow;
+        Theme.Panel("frtime", () =>
+        {
+            Theme.SubHeader("Расписание");
+            if (now < judging)
+                ImGui.TextColored(Theme.Text, $"Сейчас предпросмотр темы. Оценка откроется {judging.ToLocalTime():dd.MM HH:mm} (пятница) и продлится до {RaidTier.NextReset.ToLocalTime():dd.MM HH:mm}.");
+            else
+                ImGui.TextColored(Theme.Green, $"Идёт оценка — до {RaidTier.NextReset.ToLocalTime():dd.MM HH:mm}. 80+ баллов — 60 000 MGP, просто участие — 10 000 MGP.");
+            ImGui.TextColored(Theme.Gray, "Masked Rose стоит в Gold Saucer у Event Square. Ответы недели сообщество (Kaiyoko) публикует на Reddit в пятницу.");
+        });
+
+        var fm = FFXIVClientStructs.FFXIV.Client.Game.FashionCheckManager.Instance();
+        if (fm == null || !PlayerInfo.Ready) return;
+        var themeId = fm->Theme.WeeklyTheme;
+        var themes = Plugin.Data.GetExcelSheet<FashionCheckWeeklyTheme>();
+        var cats = Plugin.Data.GetExcelSheet<FashionCheckThemeCategory>();
+        Theme.Panel("frtheme", () =>
+        {
+            Theme.SubHeader("Тема этой недели");
+            var name = themeId == 0 ? "" : themes.GetRowOrDefault(themeId)?.Name.ExtractText() ?? "";
+            if (name.Length == 0)
+            {
+                ImGui.TextColored(Theme.TextDim, "Тема неизвестна — поговори с Masked Rose в Gold Saucer, и плагин покажет тему и подсказки по слотам.");
+                return;
+            }
+            Theme.LargeText(Theme.Gold, name);
+            var items = fm->HighScore.ItemIds.ToArray();
+            var hints = fm->Theme.ItemThemes.ToArray();
+            var shown = 0;
+            for (var i = 0; i < hints.Length; i++)
+            {
+                if (hints[i] == 0) continue;
+                var hint = cats.GetRowOrDefault(hints[i])?.Name.ExtractText() ?? "";
+                if (hint.Length == 0) continue;
+                shown++;
+                var item = i < items.Length ? items[i] : 0u;
+                var slot = item != 0 ? SlotName(item) : $"Слот {i + 1}";
+                ImGui.TextColored(Theme.Text, $"{slot}: ");
+                ImGui.SameLine();
+                ImGui.TextColored(Theme.Gold, hint);
+            }
+            if (shown == 0) ImGui.TextColored(Theme.TextDim, "Подсказки по слотам игра показывает после первой оценки на этой неделе.");
+        });
+
+        Theme.Panel("frbest", () =>
+        {
+            Theme.SubHeader($"Твой лучший результат этой недели: {fm->HighScore.Score} баллов");
+            var items = fm->HighScore.ItemIds.ToArray();
+            var any = false;
+            for (var i = 0; i < items.Length; i++)
+            {
+                if (items[i] == 0) continue;
+                any = true;
+                WikiView.ItemLine(items[i] % 1000000, 0, SlotName(items[i]), $"fr{i}");
+            }
+            if (!any) ImGui.TextColored(Theme.TextDim, "Пока нет оценки на этой неделе.");
+        });
+    }
+
+    private static string SlotName(uint item)
+    {
+        var it = Plugin.Data.GetExcelSheet<Item>().GetRowOrDefault(item % 1000000);
+        if (it?.EquipSlotCategory.ValueNullable is not { } c) return "Слот";
+        return GuideData.SlotOf(c) switch
+        {
+            GearSlot.MainHand => "Оружие", GearSlot.OffHand => "Вторая рука", GearSlot.Head => "Голова", GearSlot.Body => "Тело",
+            GearSlot.Hands => "Руки", GearSlot.Legs => "Ноги", GearSlot.Feet => "Обувь", GearSlot.Ears => "Серьги",
+            GearSlot.Neck => "Ожерелье", GearSlot.Wrists => "Браслеты", GearSlot.Ring => "Кольцо", _ => "Слот",
+        };
     }
 
     private void DrawCactpot()

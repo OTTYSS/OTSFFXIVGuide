@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden }
 
 public sealed class MainWindow : Window
 {
@@ -65,6 +65,7 @@ public sealed class MainWindow : Window
             (MainTab.Furniture, FontAwesomeIcon.Couch, "Мебель"),
             (MainTab.Jobs, FontAwesomeIcon.UserGraduate, "Профессии"),
             (MainTab.Statuses, FontAwesomeIcon.Magic, "Статусы"),
+            (MainTab.Salvage, FontAwesomeIcon.Recycle, "Разборка и сундуки"),
         }),
         new("Активности", FontAwesomeIcon.Fire, new[]
         {
@@ -76,6 +77,7 @@ public sealed class MainWindow : Window
             (MainTab.Ocean, FontAwesomeIcon.Water, "Океан"),
             (MainTab.GoldSaucer, FontAwesomeIcon.Dice, "Gold Saucer"),
             (MainTab.Island, FontAwesomeIcon.Umbrella, "Остров"),
+            (MainTab.ChocoboGarden, FontAwesomeIcon.Seedling, "Чокобо и сад"),
             (MainTab.Tribes, FontAwesomeIcon.Handshake, "Племена"),
             (MainTab.Weekly, FontAwesomeIcon.CalendarCheck, "Рейды, события, поставки"),
         }),
@@ -148,6 +150,8 @@ public sealed class MainWindow : Window
         jobsTab = new JobsTab(data);
         leves = new LevesTab(data);
         sranks = new SRanksTab();
+        salvage = new SalvageTab();
+        chocoGarden = new ChocoboGardenTab();
         story = new StoryTab(data, quests, duties);
         search = new SearchTab(data, duties, quests, items, Go);
         inventory = new InventoryTab(market);
@@ -235,6 +239,8 @@ public sealed class MainWindow : Window
     private readonly JobsTab jobsTab;
     private readonly LevesTab leves;
     private readonly SRanksTab sranks;
+    private readonly SalvageTab salvage;
+    private readonly ChocoboGardenTab chocoGarden;
     private string headerSearch = "";
     private bool focusHeaderSearch;
 
@@ -444,7 +450,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.10");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.11");
         }
 
         ImGui.EndChild();
@@ -705,6 +711,8 @@ public sealed class MainWindow : Window
             case MainTab.Jobs: jobsTab.Draw(); break;
             case MainTab.Leves: leves.Draw(); break;
             case MainTab.SRanks: sranks.Draw(); break;
+            case MainTab.Salvage: salvage.Draw(); break;
+            case MainTab.ChocoboGarden: chocoGarden.Draw(); break;
         }
     }
 
