@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks }
 
 public sealed class MainWindow : Window
 {
@@ -63,11 +63,15 @@ public sealed class MainWindow : Window
             (MainTab.Bestiary, FontAwesomeIcon.Skull, "Бестиарий"),
             (MainTab.Wiki, FontAwesomeIcon.BookOpen, "Зоны, NPC, рыбалка, избранное"),
             (MainTab.Furniture, FontAwesomeIcon.Couch, "Мебель"),
+            (MainTab.Jobs, FontAwesomeIcon.UserGraduate, "Профессии"),
+            (MainTab.Statuses, FontAwesomeIcon.Magic, "Статусы"),
         }),
         new("Активности", FontAwesomeIcon.Fire, new[]
         {
             (MainTab.Fates, FontAwesomeIcon.Fire, "FATE и атэриты"),
             (MainTab.Hunt, FontAwesomeIcon.Crosshairs, "Hunt-марки"),
+            (MainTab.SRanks, FontAwesomeIcon.Skull, "S-ранги"),
+            (MainTab.Leves, FontAwesomeIcon.ClipboardList, "Левы"),
             (MainTab.Treasure, FontAwesomeIcon.Gift, "Карты сокровищ"),
             (MainTab.Ocean, FontAwesomeIcon.Water, "Океан"),
             (MainTab.GoldSaucer, FontAwesomeIcon.Dice, "Gold Saucer"),
@@ -91,6 +95,7 @@ public sealed class MainWindow : Window
         new("Экономика", FontAwesomeIcon.Coins, new[]
         {
             (MainTab.Inventory, FontAwesomeIcon.BoxOpen, "Инвентарь"),
+            (MainTab.Currencies, FontAwesomeIcon.Coins, "Валюты"),
             (MainTab.Shopping, FontAwesomeIcon.ShoppingCart, "Покупки"),
             (MainTab.Craft, FontAwesomeIcon.Hammer, "Крафт"),
             (MainTab.Gather, FontAwesomeIcon.Leaf, "Сбор"),
@@ -138,6 +143,11 @@ public sealed class MainWindow : Window
         furniture = new FurnitureTab(market);
         ventures = new VenturesTab(data, market);
         occult = new OccultTab();
+        currencies = new CurrenciesTab(market);
+        statuses = new StatusesTab();
+        jobsTab = new JobsTab(data);
+        leves = new LevesTab(data);
+        sranks = new SRanksTab();
         story = new StoryTab(data, quests, duties);
         search = new SearchTab(data, duties, quests, items, Go);
         inventory = new InventoryTab(market);
@@ -220,6 +230,11 @@ public sealed class MainWindow : Window
     private readonly FurnitureTab furniture;
     private readonly VenturesTab ventures;
     private readonly OccultTab occult;
+    private readonly CurrenciesTab currencies;
+    private readonly StatusesTab statuses;
+    private readonly JobsTab jobsTab;
+    private readonly LevesTab leves;
+    private readonly SRanksTab sranks;
     private string headerSearch = "";
     private bool focusHeaderSearch;
 
@@ -429,7 +444,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.9");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.10");
         }
 
         ImGui.EndChild();
@@ -685,6 +700,11 @@ public sealed class MainWindow : Window
             case MainTab.Furniture: furniture.Draw(); break;
             case MainTab.Ventures: ventures.Draw(); break;
             case MainTab.Occult: occult.Draw(); break;
+            case MainTab.Currencies: currencies.Draw(); break;
+            case MainTab.Statuses: statuses.Draw(); break;
+            case MainTab.Jobs: jobsTab.Draw(); break;
+            case MainTab.Leves: leves.Draw(); break;
+            case MainTab.SRanks: sranks.Draw(); break;
         }
     }
 
