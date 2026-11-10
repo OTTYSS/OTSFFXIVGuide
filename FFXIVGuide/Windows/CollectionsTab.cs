@@ -11,7 +11,8 @@ namespace FFXIVGuide.Windows;
 /// <summary>Коллекции: маунты, минёны, оркестрион, карты, броня чокобо, аксессуары, причёски, очки, Framer's kits.</summary>
 internal sealed class CollectionsTab
 {
-    private sealed record Entry(uint Id, string Name, uint Icon, uint ItemId);
+    /// <summary>How — как получить (если открывается не предметом или у игры есть своя подсказка).</summary>
+    private sealed record Entry(uint Id, string Name, uint Icon, uint ItemId, string? How = null);
 
     private sealed class Kind
     {
@@ -91,7 +92,108 @@ internal sealed class CollectionsTab
             ItemKind("Причёски и раскраска", HairstyleItems),
             ItemKind("Очки", () => ItemsWithAction(ActionGlasses)),
             ItemKind("Framer's kits", () => ItemsWithAction(ActionFramersKit)),
+            new Kind
+            {
+                Title = "Титулы",
+                Load = LoadTitles,
+                Unlocked = id => Plugin.Data.GetExcelSheet<Title>().GetRowOrDefault(id) is { } r && u.IsTitleUnlocked(r),
+            },
+            new Kind
+            {
+                Title = "Plate: фоны",
+                Load = () => Plugin.Data.GetExcelSheet<BannerBg>().Where(b => !b.Name.IsEmpty)
+                    .Select(b => PlateEntry(b.RowId, b.Name.ExtractText(), (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
+                Unlocked = id => Plugin.Data.GetExcelSheet<BannerBg>().GetRowOrDefault(id) is { } r && u.IsBannerBgUnlocked(r),
+            },
+            new Kind
+            {
+                Title = "Plate: рамки",
+                Load = () => Plugin.Data.GetExcelSheet<BannerFrame>().Where(b => !b.Name.IsEmpty)
+                    .Select(b => PlateEntry(b.RowId, b.Name.ExtractText(), (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
+                Unlocked = id => Plugin.Data.GetExcelSheet<BannerFrame>().GetRowOrDefault(id) is { } r && u.IsBannerFrameUnlocked(r),
+            },
+            new Kind
+            {
+                Title = "Plate: акценты",
+                Load = () => Plugin.Data.GetExcelSheet<BannerDecoration>().Where(b => !b.Name.IsEmpty)
+                    .Select(b => PlateEntry(b.RowId, b.Name.ExtractText(), (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
+                Unlocked = id => Plugin.Data.GetExcelSheet<BannerDecoration>().GetRowOrDefault(id) is { } r && u.IsBannerDecorationUnlocked(r),
+            },
+            new Kind
+            {
+                Title = "Plate: позы",
+                Load = () => Plugin.Data.GetExcelSheet<BannerTimeline>()
+                    .Select(b => PlateEntry(b.RowId, PoseName(b), (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
+                Unlocked = id => Plugin.Data.GetExcelSheet<BannerTimeline>().GetRowOrDefault(id) is { } r && u.IsBannerTimelineUnlocked(r),
+            },
+            new Kind
+            {
+                Title = "Plate: мимика",
+                Load = () => Plugin.Data.GetExcelSheet<BannerFacial>()
+                    .Select(b => PlateEntry(b.RowId, b.Emote.ValueNullable?.Name.ExtractText() ?? "", (uint)(b.Emote.ValueNullable?.Icon ?? 0), b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
+                Unlocked = id => Plugin.Data.GetExcelSheet<BannerFacial>().GetRowOrDefault(id) is { } r && u.IsBannerFacialUnlocked(r),
+            },
         };
+    }
+
+    private Dictionary<uint, uint>? kitByCondition;
+
+    private static string PoseName(BannerTimeline b)
+    {
+        var n = b.Name.ExtractText();
+        if (n.Length > 0) return n;
+        // Позы-эмоции хранят имя в таблице эмоций
+        return Plugin.Data.GetExcelSheet<Emote>().GetRowOrDefault(b.AdditionalData.RowId)?.Name.ExtractText() ?? "";
+    }
+
+    /// <summary>Элемент портрета: null — если он открыт у всех с самого начала (или имени нет).</summary>
+    private Entry? PlateEntry(uint id, string name, uint icon, uint condId)
+    {
+        if (name.Length == 0 || condId == 0) return null;
+        var cond = Plugin.Data.GetExcelSheet<BannerCondition>().GetRowOrDefault(condId);
+        if (cond is null || cond.Value.UnlockType1 == 10) return null; // доступен сразу
+        if (kitByCondition is null)
+        {
+            kitByCondition = new();
+            foreach (var it in ItemsWithAction(ActionFramersKit)) kitByCondition.TryAdd(it.AdditionalData.RowId, it.RowId);
+        }
+        var kit = kitByCondition.GetValueOrDefault(condId);
+        string? how = null;
+        var hint = Plugin.Data.GetExcelSheet<BannerObtainHintType>().GetRowOrDefault(cond.Value.UnlockHint.RowId)?.Text.ExtractText() ?? "";
+        if (hint.Length > 0) how = hint;
+        else if (cond.Value.UnlockType1 == 1 && cond.Value.UnlockCriteria1.Count > 0
+                 && Plugin.Data.GetExcelSheet<Quest>().GetRowOrDefault(cond.Value.UnlockCriteria1[0].RowId) is { } q && !q.Name.IsEmpty)
+            how = $"Квест «{NameTranslations.Show(q.Name.ExtractText())}»";
+        else if (cond.Value.UnlockType1 is 9 or 11)
+        {
+            // Награды сезонов Crystalline Conflict: через достижение или у NPC за PvP-валюту
+            how = "Награда сезона Crystalline Conflict (PvP)";
+            var c2 = cond.Value.UnlockCriteria2.RowId;
+            if (cond.Value.UnlockType2 == 11 && Plugin.Data.GetExcelSheet<Lumina.Excel.Sheets.Achievement>().GetRowOrDefault(c2) is { } a && !a.Name.IsEmpty)
+                how += $": достижение «{NameTranslations.Show(a.Name.ExtractText())}»";
+            else if (cond.Value.UnlockType2 == 13 && Plugin.Data.GetExcelSheet<ENpcResident>().GetRowOrDefault(c2) is { } npc && !npc.Singular.IsEmpty)
+                how += $": у NPC {GuideData.Capitalize(npc.Singular.ExtractText())}";
+        }
+        else if (kit == 0) how = "Способ получения в файлах игры не описан";
+        return new Entry(id, name, icon, kit, how);
+    }
+
+    private static List<Entry> LoadTitles()
+    {
+        var byTitle = new Dictionary<uint, Lumina.Excel.Sheets.Achievement>();
+        foreach (var a in Plugin.Data.GetExcelSheet<Lumina.Excel.Sheets.Achievement>())
+            if (a.Title.RowId != 0) byTitle.TryAdd(a.Title.RowId, a);
+        return Plugin.Data.GetExcelSheet<Title>().Where(t => !t.Masculine.IsEmpty)
+            .Select(t =>
+            {
+                var how = byTitle.TryGetValue(t.RowId, out var a)
+                    ? $"Достижение «{NameTranslations.Show(a.Name.ExtractText())}»: {a.Description.ExtractText()}"
+                    : "Не за достижение (квест, событие или контент)";
+                var name = t.Masculine.ExtractText();
+                var fem = t.Feminine.ExtractText();
+                if (fem.Length > 0 && fem != name) name += " / " + fem;
+                return new Entry(t.RowId, name, 0, 0, how);
+            }).ToList();
     }
 
     /// <summary>Коллекция, которая открывается предметами: запись = сам предмет.</summary>
@@ -145,14 +247,15 @@ internal sealed class CollectionsTab
         // Сводка по всем видам
         Theme.Panel("csum", () =>
         {
-            for (var i = 0; i < kinds.Length; i++)
+            // Видов много — раскладываем сеткой, чтобы сводка не занимала весь экран
+            Theme.Grid("csumgrid", kinds.Length, 260f, i =>
             {
                 var k = kinds[i];
                 k.Entries ??= k.Load();
                 var have = k.Entries.Count(e => k.Unlocked(e.Id));
                 if (Theme.ProgressButton($"k{i}", k.Title, have, k.Entries.Count, kindIdx == i ? Theme.Gold : Theme.Blue))
                     kindIdx = i;
-            }
+            });
         });
 
         var kind = kinds[kindIdx];
@@ -167,6 +270,7 @@ internal sealed class CollectionsTab
             .OrderBy(e => e.Name)
             .ToList();
         ImGui.TextColored(Theme.TextDim, $"{kind.Title}: {rows.Count}");
+        Translator.Instance.Request(rows.Where(e => e.How is not null && e.How.StartsWith("Obtained", StringComparison.Ordinal)).Select(e => e.How!).Distinct());
 
         if (ImGui.BeginChild("##clist", Vector2.Zero))
         {
@@ -175,7 +279,9 @@ internal sealed class CollectionsTab
             {
                 var e = rows[i];
                 string sub;
-                if (e.ItemId == 0)
+                if (e.How is not null)
+                    sub = Translator.Instance.Get(e.How) ?? e.How;
+                else if (e.ItemId == 0)
                     sub = show == 1 ? "собрано" : "Открывается не предметом (квест, достижение, контент)";
                 else
                 {

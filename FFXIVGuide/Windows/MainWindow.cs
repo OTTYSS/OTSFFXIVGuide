@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor, SideStories }
 
 public sealed class MainWindow : Window
 {
@@ -48,6 +48,7 @@ public sealed class MainWindow : Window
         {
             (MainTab.Story, FontAwesomeIcon.Book, "Сюжет"),
             (MainTab.Quests, FontAwesomeIcon.Scroll, "Квесты"),
+            (MainTab.SideStories, FontAwesomeIcon.BookOpen, "Побочные сюжеты"),
         }),
         new("Бои", FontAwesomeIcon.Dungeon, new[]
         {
@@ -169,6 +170,7 @@ public sealed class MainWindow : Window
         sightseeing = new SightseeingTab();
         huntingLog = new HuntingLogTab();
         dyes = new DyesTab(market);
+        sideStories = new SideStoryTab();
         story = new StoryTab(data, quests, duties);
         search = new SearchTab(data, duties, quests, items, Go);
         search.Providers.Add(t => statuses.Search(t, Go));
@@ -182,6 +184,7 @@ public sealed class MainWindow : Window
         search.Providers.Add(t => sightseeing.Search(t, Go));
         search.Providers.Add(t => huntingLog.Search(t, Go));
         search.Providers.Add(t => dyes.Search(t, Go));
+        search.Providers.Add(t => sideStories.Search(t, Go));
         inventory = new InventoryTab(market);
         craft = new CraftTab(market);
         hunt = new HuntTab(hunts);
@@ -279,6 +282,7 @@ public sealed class MainWindow : Window
     private readonly SightseeingTab sightseeing;
     private readonly HuntingLogTab huntingLog;
     private readonly DyesTab dyes;
+    private readonly SideStoryTab sideStories;
     private string headerSearch = "";
     private bool focusHeaderSearch;
 
@@ -488,7 +492,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.14");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.15");
         }
 
         ImGui.EndChild();
@@ -768,6 +772,7 @@ public sealed class MainWindow : Window
             case MainTab.Sightseeing: sightseeing.Draw(); break;
             case MainTab.HuntingLog: huntingLog.Draw(); break;
             case MainTab.Dyes: dyes.Draw(); break;
+            case MainTab.SideStories: sideStories.Draw(); break;
         }
     }
 
