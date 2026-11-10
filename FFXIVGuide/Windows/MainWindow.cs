@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor }
 
 public sealed class MainWindow : Window
 {
@@ -42,7 +42,7 @@ public sealed class MainWindow : Window
 
     internal static readonly Hub[] Hubs =
     {
-        new("Обзор", FontAwesomeIcon.Compass, new[] { (MainTab.Home, FontAwesomeIcon.Compass, "Обзор"), (MainTab.Progress, FontAwesomeIcon.ChartPie, "Прогресс аккаунта") }),
+        new("Обзор", FontAwesomeIcon.Compass, new[] { (MainTab.Home, FontAwesomeIcon.Compass, "Обзор"), (MainTab.Progress, FontAwesomeIcon.ChartPie, "Прогресс аккаунта"), (MainTab.Patch, FontAwesomeIcon.Bullhorn, "Что нового в патче"), (MainTab.Mentor, FontAwesomeIcon.Crown, "Ментор") }),
         new("Поиск", FontAwesomeIcon.Search, new[] { (MainTab.Search, FontAwesomeIcon.Search, "Поиск") }),
         new("Сюжет и квесты", FontAwesomeIcon.Book, new[]
         {
@@ -95,7 +95,7 @@ public sealed class MainWindow : Window
             (MainTab.Achievements, FontAwesomeIcon.Trophy, "Достижения"),
             (MainTab.Diary, FontAwesomeIcon.ChartLine, "Дневник"),
             (MainTab.Collections, FontAwesomeIcon.Paw, "Коллекции"),
-            (MainTab.MountFarm, FontAwesomeIcon.Horse, "Фарм маунтов"),
+            (MainTab.MountFarm, FontAwesomeIcon.Horse, "Фарм коллекций"),
             (MainTab.Unlocks, FontAwesomeIcon.Unlock, "Разблокировки"),
             (MainTab.Glamour, FontAwesomeIcon.Tshirt, "Гламур"),
         }),
@@ -160,6 +160,8 @@ public sealed class MainWindow : Window
         salvage = new SalvageTab();
         chocoGarden = new ChocoboGardenTab();
         progress = new ProgressTab(data, Go);
+        patch = new PatchTab();
+        mentor = new MentorTab();
         recipeBooks = new RecipeBooksTab(market);
         pvp = new PvPTab();
         variant = new VariantTab(data);
@@ -268,6 +270,8 @@ public sealed class MainWindow : Window
     private readonly SalvageTab salvage;
     private readonly ChocoboGardenTab chocoGarden;
     private readonly ProgressTab progress;
+    private readonly PatchTab patch;
+    private readonly MentorTab mentor;
     private readonly RecipeBooksTab recipeBooks;
     private readonly PvPTab pvp;
     private readonly VariantTab variant;
@@ -484,7 +488,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.13");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.14");
         }
 
         ImGui.EndChild();
@@ -694,6 +698,13 @@ public sealed class MainWindow : Window
         ImGui.Dummy(Vector2.Zero);
     }
 
+    /// <summary>Вкладка без своей прокрутки: оборачиваем, чтобы на маленьком окне всё было доступно.</summary>
+    private static void Scrolled(string id, Action draw)
+    {
+        if (ImGui.BeginChild("##scroll_" + id, Vector2.Zero)) draw();
+        ImGui.EndChild();
+    }
+
     private void DrawPage()
     {
         switch (current)
@@ -708,7 +719,7 @@ public sealed class MainWindow : Window
             case MainTab.Inventory: inventory.Draw(); break;
             case MainTab.Checklist: checklist.Draw(); break;
             case MainTab.Craft: craft.Draw(); break;
-            case MainTab.Hunt: hunt.Draw(); break;
+            case MainTab.Hunt: Scrolled("hunt", hunt.Draw); break;
             case MainTab.Collections: collections.Draw(); break;
             case MainTab.Settings: settings.Draw(); break;
             case MainTab.Leveling: leveling.Draw(); break;
@@ -748,8 +759,10 @@ public sealed class MainWindow : Window
             case MainTab.Salvage: salvage.Draw(); break;
             case MainTab.ChocoboGarden: chocoGarden.Draw(); break;
             case MainTab.Progress: progress.Draw(); break;
+            case MainTab.Patch: patch.Draw(); break;
+            case MainTab.Mentor: mentor.Draw(); break;
             case MainTab.RecipeBooks: recipeBooks.Draw(); break;
-            case MainTab.PvP: pvp.Draw(); break;
+            case MainTab.PvP: Scrolled("pvp", pvp.Draw); break;
             case MainTab.Variant: variant.Draw(); break;
             case MainTab.Cosmic: cosmic.Draw(); break;
             case MainTab.Sightseeing: sightseeing.Draw(); break;

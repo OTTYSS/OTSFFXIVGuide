@@ -8,7 +8,7 @@ using Lumina.Excel.Sheets;
 
 namespace FFXIVGuide.Windows;
 
-/// <summary>Коллекции: маунты, минёны, ролы оркестриона, карты Triple Triad.</summary>
+/// <summary>Коллекции: маунты, минёны, оркестрион, карты, броня чокобо, аксессуары, причёски, очки, Framer's kits.</summary>
 internal sealed class CollectionsTab
 {
     private sealed record Entry(uint Id, string Name, uint Icon, uint ItemId);
@@ -31,7 +31,8 @@ internal sealed class CollectionsTab
     private Dictionary<(uint ActionType, uint UnlockId), uint>? unlockItems;
 
     // Тип действия предмета (ItemAction.Action), который открывает коллекцию
-    private const uint ActionMount = 1322, ActionMinion = 853, ActionOrchestrion = 25183, ActionCard = 3357;
+    private const uint ActionMount = 1322, ActionMinion = 853, ActionOrchestrion = 25183, ActionCard = 3357,
+        ActionBarding = 1013, ActionOrnament = 20086, ActionGlasses = 37312, ActionFramersKit = 29459;
 
     public CollectionsTab(GuideData data)
     {
@@ -71,7 +72,48 @@ internal sealed class CollectionsTab
                     .Select(m => new Entry(m.RowId, m.Name.ExtractText(), 0, ItemFor(ActionCard, m.RowId))).ToList(),
                 Unlocked = id => Plugin.Data.GetExcelSheet<TripleTriadCard>().GetRowOrDefault(id) is { } r && u.IsTripleTriadCardUnlocked(r),
             },
+            new Kind
+            {
+                Title = "Броня чокобо",
+                Load = () => Plugin.Data.GetExcelSheet<BuddyEquip>()
+                    .Where(m => !m.Name.IsEmpty)
+                    .Select(m => new Entry(m.RowId, GuideData.Capitalize(m.Name.ExtractText()), (uint)(m.IconBody != 0 ? m.IconBody : m.IconHead), ItemFor(ActionBarding, m.RowId))).ToList(),
+                Unlocked = id => Plugin.Data.GetExcelSheet<BuddyEquip>().GetRowOrDefault(id) is { } r && u.IsBuddyEquipUnlocked(r),
+            },
+            new Kind
+            {
+                Title = "Аксессуары",
+                Load = () => Plugin.Data.GetExcelSheet<Ornament>()
+                    .Where(m => !m.Singular.IsEmpty && m.Icon != 0)
+                    .Select(m => new Entry(m.RowId, GuideData.Capitalize(m.Singular.ExtractText()), m.Icon, ItemFor(ActionOrnament, m.RowId))).ToList(),
+                Unlocked = id => Plugin.Data.GetExcelSheet<Ornament>().GetRowOrDefault(id) is { } r && u.IsOrnamentUnlocked(r),
+            },
+            ItemKind("Причёски и раскраска", HairstyleItems),
+            ItemKind("Очки", () => ItemsWithAction(ActionGlasses)),
+            ItemKind("Framer's kits", () => ItemsWithAction(ActionFramersKit)),
         };
+    }
+
+    /// <summary>Коллекция, которая открывается предметами: запись = сам предмет.</summary>
+    private static Kind ItemKind(string title, Func<IEnumerable<Item>> items) => new()
+    {
+        Title = title,
+        Load = () => items().Where(i => !i.Name.IsEmpty)
+            .Select(i => new Entry(i.RowId, i.Name.ExtractText(), i.Icon, i.RowId)).ToList(),
+        Unlocked = id => Plugin.Data.GetExcelSheet<Item>().GetRowOrDefault(id) is { } r && Plugin.Unlocks.IsItemUnlocked(r),
+    };
+
+    private static IEnumerable<Item> ItemsWithAction(uint action) =>
+        Plugin.Data.GetExcelSheet<Item>().Where(i => i.ItemAction.ValueNullable is { } a && a.Action.RowId == action);
+
+    /// <summary>Книги причёсок и раскраски лица: предметы-подсказки у покупаемых вариантов внешности.</summary>
+    private static IEnumerable<Item> HairstyleItems()
+    {
+        var items = Plugin.Data.GetExcelSheet<Item>();
+        return Plugin.Data.GetExcelSheet<CharaMakeCustomize>()
+            .Where(c => c.IsPurchasable && c.HintItem.RowId != 0)
+            .Select(c => c.HintItem.RowId).Distinct()
+            .Select(id => items.GetRowOrDefault(id)).Where(i => i is not null).Select(i => i!.Value);
     }
 
     private uint ItemFor(uint actionType, uint unlockId)

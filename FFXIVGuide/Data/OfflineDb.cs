@@ -32,6 +32,7 @@ public sealed class OfflineDb : IDisposable
         "fishing-sources.json", "fishing-spots.json", "spearfishing-sources.json", "gardening-sources.json",
         "voyage-sources.json", "mogstation-sources.json",
         "collectables.json", "submarine-parts.json", "island-animals.json",
+        "patch-names.json", "patch-content.json",
     };
 
     /// <summary>Индексы Garland Tools (по одному файлу).</summary>

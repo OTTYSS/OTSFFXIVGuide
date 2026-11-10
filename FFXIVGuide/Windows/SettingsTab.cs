@@ -304,7 +304,10 @@ internal sealed class SettingsTab
                 ImGui.TextColored(backupStatus.StartsWith("Ошибка") ? Theme.Red : Theme.Green, backupStatus);
         }));
 
-        Theme.Grid("sgrid", panels.Count, 420f, i => panels[i]());
+        // Своя прокручиваемая область: на маленьком окне настройки не помещаются по высоте
+        if (ImGui.BeginChild("##settingsScroll", System.Numerics.Vector2.Zero))
+            Theme.Grid("sgrid", panels.Count, 420f, i => panels[i]());
+        ImGui.EndChild();
 
         if (changed) cfg.Save();
     }

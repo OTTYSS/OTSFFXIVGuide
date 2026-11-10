@@ -91,6 +91,7 @@ public sealed class Plugin : IDalamudPlugin
         wiki = new WikiService();
         Translator.Instance.LoadFromDisk();
         offlineDb = new OfflineDb();
+        PatchSnapshot.Start();
         names = new NameTranslations();
         mobImages = new MobImages();
         // Тяжёлые справочники собираем в фоне сразу при запуске, чтобы разделы потом открывались мгновенно
@@ -124,7 +125,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Commands.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | fish | blu | target | peek | mini | overlay | settings",
+            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | patch | mentor | fish | blu | target | peek | mini | overlay | settings",
         });
 
         PluginInterface.UiBuilder.Draw += windows.Draw;
@@ -239,6 +240,8 @@ public sealed class Plugin : IDalamudPlugin
             "vistas" or "sightseeing" or "виды" => MainTab.Sightseeing,
             "huntlog" or "hunting" => MainTab.HuntingLog,
             "dyes" or "краски" => MainTab.Dyes,
+            "patch" or "патч" or "new" => MainTab.Patch,
+            "mentor" or "ментор" => MainTab.Mentor,
             "raid" or "лимиты" => MainTab.Weekly,
             "overlay" => (MainTab?)null,
             _ => (MainTab?)null,
