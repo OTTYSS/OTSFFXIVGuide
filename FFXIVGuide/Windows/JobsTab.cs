@@ -103,6 +103,28 @@ internal sealed class JobsTab
         return cache[jobId] = new JobData(actions.OrderBy(a => a.Level).ToList(), role.OrderBy(a => a.Level).ToList(), traits, pvp, quests);
     }
 
+    private List<(string Name, uint Job, int Level, uint Icon)>? actionIndex;
+
+    public void Focus(uint jobId, string text, int sec = 0) { job = jobId; search = text; section = sec; }
+
+    public IEnumerable<SearchHit> Search(string term, Action<MainTab> go)
+    {
+        if (jobs is null) BuildJobs();
+        actionIndex ??= Plugin.Data.GetExcelSheet<Lumina.Excel.Sheets.Action>()
+            .Where(a => a.IsPlayerAction && !a.IsPvP && a.ClassJobLevel > 0 && a.ClassJob.RowId != 0 && a.Icon != 0 && a.Name.ExtractText().Length > 0)
+            .Select(a => (a.Name.ExtractText(), a.ClassJob.RowId, (int)a.ClassJobLevel, (uint)a.Icon))
+            .Distinct().ToList();
+        foreach (var j in jobs!.Where(j => j.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || j.Abbr.Equals(term, StringComparison.OrdinalIgnoreCase)))
+            yield return new SearchHit("Профессии", $"{j.Name} ({j.Abbr})", "способности, трейты, джоб-квесты", 0, () => { Focus(j.Id, ""); go(MainTab.Jobs); });
+        foreach (var a in actionIndex.Where(a => a.Name.Contains(term, StringComparison.OrdinalIgnoreCase)))
+        {
+            var jobId = jobs!.Any(j => j.Id == a.Job) ? a.Job : jobs!.FirstOrDefault(j => Plugin.Data.GetExcelSheet<ClassJob>().GetRow(j.Id).ClassJobParent.RowId == a.Job).Id;
+            if (jobId == 0) continue;
+            var abbr = GuideData.JobAbbrEnglish(jobId);
+            yield return new SearchHit("Навыки профессий", a.Name, $"{abbr}, ур. {a.Level}", a.Icon, () => { Focus(jobId, a.Name); go(MainTab.Jobs); });
+        }
+    }
+
     public void Draw()
     {
         Theme.Header("Профессии", "Любая профессия: способности по уровням, трейты, ролевые и PvP-навыки, джоб-квесты");

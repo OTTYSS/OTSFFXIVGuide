@@ -33,6 +33,16 @@ internal sealed class StatusesTab
             .ToList();
     }
 
+    public void Focus(string text) { search = text; filter = 0; }
+
+    public IEnumerable<SearchHit> Search(string term, Action<MainTab> go)
+    {
+        if (rows is null) Build();
+        return rows!.Where(r => r.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .Select(r => new SearchHit("Статусы", r.Name, (r.Category == 1 ? "бафф" : r.Category == 2 ? "дебафф" : "статус") + " — " + r.Desc.Replace("\n", " "), r.Icon,
+                () => { Focus(r.Name); go(MainTab.Statuses); }));
+    }
+
     public void Draw()
     {
         Theme.Header("Статусы", "Все баффы и дебаффы игры: что делают; статусы твоей цели — прямо сейчас");

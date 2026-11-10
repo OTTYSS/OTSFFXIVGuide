@@ -269,6 +269,15 @@ internal sealed class ChocoboGardenTab
         ImGui.EndChild();
     }
 
+    public IEnumerable<SearchHit> Search(string term, Action<MainTab> go)
+    {
+        if (seeds is null && WikiPage.Get(SeedsPage) is { } text) { seedsFrom = text; seeds = ParseSeeds(text); }
+        if (seeds is null) yield break;
+        foreach (var s in seeds.Where(s => s.Name.Contains(term, StringComparison.OrdinalIgnoreCase)))
+            yield return new SearchHit("Семена", s.Name, s.Crosses.Count > 0 ? "скрещивание: " + string.Join("; ", s.Crosses.Take(2)) : s.Botanist, s.Item != 0 ? WikiView.ItemInfo(s.Item).Icon : 0,
+                () => { section = 1; seedSearch = s.Name; go(MainTab.ChocoboGarden); });
+    }
+
     public void Draw()
     {
         Theme.Header("Чокобо и сад", "Чем кормить чокобо до нужного цвета и какие семена скрещивать");

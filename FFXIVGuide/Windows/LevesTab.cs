@@ -71,6 +71,23 @@ internal sealed class LevesTab
         }
     }
 
+    private void Focus(LeveRow l)
+    {
+        group = Math.Max(0, Array.FindIndex(Groups, g => g.Name == l.Kind));
+        abbr = group == 2 ? "GLA" : Groups[group].Abbrs.FirstOrDefault(a => l.Cats.Contains("," + a + ",")) ?? Groups[group].Abbrs[0];
+        myLevel = false;
+        minLevel = 1;
+        maxLevel = 100;
+        search = l.Name;
+    }
+
+    public IEnumerable<SearchHit> Search(string term, Action<MainTab> go)
+    {
+        if (leves is null) Build();
+        return leves!.Where(l => l.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .Select(l => new SearchHit("Левы", l.Name, $"{l.Kind}, ур. {l.Level} · {l.Place}", 0, () => { Focus(l); go(MainTab.Leves); }));
+    }
+
     public void Draw()
     {
         Theme.Header("Левы", "Гильдейские задания: у кого брать, что сдать, сколько дают; удобно для прокачки крафта и сбора");

@@ -46,6 +46,12 @@ internal sealed class SearchTab
     }
 
     public BestiaryTab? Bestiary;
+
+    /// <summary>Поиск по остальным разделам плагина (статусы, навыки, левы, S-ранги, семена…).</summary>
+    public readonly List<Func<string, IEnumerable<SearchHit>>> Providers = new();
+    private List<(string Group, List<SearchHit> Hits)> extraHits = new();
+    private string extraFor = "\0";
+    private DateTime extraAt;
     private List<WikiMobRow> mobHits = new();
     private int mobTotal;
     private int mobIndexCount = -1;
@@ -103,8 +109,23 @@ internal sealed class SearchTab
             return;
         }
 
+        // Остальные разделы: пересчёт при смене запроса и раз в 3 с (данные могут догружаться)
+        if (term != extraFor || DateTime.Now - extraAt > TimeSpan.FromSeconds(3))
+        {
+            extraFor = term;
+            extraAt = DateTime.Now;
+            var hits = new List<SearchHit>();
+            foreach (var p in Providers)
+            {
+                try { hits.AddRange(p(term).Take(60)); }
+                catch (Exception e) { Plugin.Log.Warning(e, "Поиск: ошибка в разделе"); }
+            }
+            extraHits = hits.GroupBy(h => h.Group).Select(g => (g.Key, g.OrderBy(h => h.Name.Length).ToList())).ToList();
+        }
+        var extraTotal = extraHits.Sum(g => g.Hits.Count);
+
         var pageHits = MainWindow.AllPages.Count(x => x.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || x.Hub.Contains(term, StringComparison.OrdinalIgnoreCase));
-        if (dutyTotal + questTotal + itemTotal + mobTotal + pageHits == 0)
+        if (dutyTotal + questTotal + itemTotal + mobTotal + pageHits + extraTotal == 0)
         {
             Theme.Panel("sempty", () => ImGui.TextColored(Theme.TextDim, "Ничего не нашлось. Проверь написание (названия на английском)."));
             return;
@@ -184,6 +205,18 @@ internal sealed class SearchTab
             {
                 GroupHeader("Мобы и боссы", mobTotal, "m");
                 foreach (var m in Take(mobHits, "m")) WikiView.MobLine(m, "s");
+            });
+        }
+
+        foreach (var (group, hits) in extraHits)
+        {
+            var key = "x" + group;
+            Theme.Panel("rx" + group, () =>
+            {
+                GroupHeader(group, hits.Count, key);
+                foreach (var h in Take(hits, key))
+                    if (Theme.Card($"##rx{group}{h.Name}{h.Sub.GetHashCode()}", h.Icon, NameTranslations.Show(h.Name), h.Sub.Length > 160 ? h.Sub[..160] + "…" : h.Sub, null, Theme.Gold, false, rowH))
+                        h.Open();
             });
         }
 

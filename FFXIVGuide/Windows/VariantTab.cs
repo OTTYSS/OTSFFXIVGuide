@@ -43,6 +43,17 @@ internal sealed unsafe class VariantTab
         return i >> 3 < bytes.Length && (bytes[i >> 3] & (1 << (i & 7))) != 0;
     }
 
+    public IEnumerable<SearchHit> Search(string term, Action<MainTab> go)
+    {
+        if (series is null) Build();
+        for (var i = 0; i < series!.Count; i++)
+        {
+            var idx = i;
+            foreach (var e in series[i].Entries.Where(e => e.Name.Contains(term, StringComparison.OrdinalIgnoreCase)))
+                yield return new SearchHit("Записи Variant", e.Name, series[i].Name, e.Icon, () => { pick = idx; go(MainTab.Variant); });
+        }
+    }
+
     public void Draw()
     {
         Theme.Header("Variant и Criterion", "Записи журнала Variant-данжей (каждая — отдельная концовка маршрута), бои и что они дают");

@@ -86,6 +86,13 @@ internal sealed unsafe class CurrenciesTab
         return im->GetInventoryItemCount(id);
     }
 
+    public IEnumerable<SearchHit> Search(string term, Action<MainTab> go)
+    {
+        if (list is null) Build();
+        return list!.Where(c => c.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .Select(c => new SearchHit("Валюты", c.Name, "сколько есть и на что потратить", c.Icon, () => { selected = c.Id; go(MainTab.Currencies); }));
+    }
+
     public void Draw()
     {
         Theme.Header("Валюты", "Все валюты: сколько есть, потолок и на что выгоднее потратить");

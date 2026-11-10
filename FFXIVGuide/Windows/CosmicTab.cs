@@ -50,6 +50,21 @@ internal sealed class CosmicTab
         }
     }
 
+    public IEnumerable<SearchHit> Search(string term, Action<MainTab> go)
+    {
+        if (missions is null) Build();
+        return missions!.Where(m => m.Name.Contains(term, StringComparison.OrdinalIgnoreCase)).Select(m => new SearchHit("Cosmic Exploration", m.Name,
+            $"{m.Jobs.Trim(',')} · ступень {m.LevelGroup}", 0, () =>
+            {
+                var j = Array.FindIndex(Jobs, a => m.Jobs.Contains("," + a + ","));
+                if (j >= 0) job = j;
+                place = "";
+                onlySpecial = false;
+                search = m.Name;
+                go(MainTab.Cosmic);
+            }));
+    }
+
     public void Draw()
     {
         Theme.Header("Cosmic Exploration", "Миссии для крафтеров и сборщиков: где, когда, сколько звёзд нужно и что дают");

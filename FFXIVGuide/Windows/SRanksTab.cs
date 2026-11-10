@@ -101,6 +101,14 @@ internal sealed class SRanksTab
         return Regex.Replace(s, @"\s{2,}", " ").Trim();
     }
 
+    public IEnumerable<SearchHit> Search(string term, Action<MainTab> go)
+    {
+        if (ranks is null && !loading && error is null) Load(false);
+        if (ranks is null) yield break;
+        foreach (var r in ranks.Where(r => r.Name.Contains(term, StringComparison.OrdinalIgnoreCase)))
+            yield return new SearchHit("S-ранги", r.Name, $"{r.Area} — {r.Trigger}", 0, () => { search = r.Name; go(MainTab.SRanks); });
+    }
+
     public void Draw()
     {
         Theme.Header("S-ранги охоты", "Как вызвать каждый S-ранг, где он появляется и когда снова будет доступен");
