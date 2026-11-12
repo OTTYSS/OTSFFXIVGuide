@@ -12,9 +12,23 @@ namespace FFXIVGuide.Windows;
 
 internal sealed class ItemsTab
 {
-    private sealed record ItemRow(uint Id, string Name, uint Icon, uint ItemLevel, string Category);
+    private sealed record ItemRow(uint Id, string Name, uint Icon, uint ItemLevel, string Category, uint CategoryId, uint EquipLevel, uint JobCategory, bool Marketable);
+
+    /// <summary>Категория из игры (ItemUICategory) с группой для списка.</summary>
+    private sealed record CategoryInfo(uint Id, string Name, int Major, int Minor);
+
+    private static readonly string[] MajorNames = { "Прочее", "Оружие", "Инструменты", "Броня", "Аксессуары", "Еда и зелья", "Материалы", "Прочее" };
+    private static readonly string[] SortNames = { "Сначала точные совпадения", "По названию", "iLvl: сначала высокий", "iLvl: сначала низкий", "Уровень: сначала высокий", "Уровень: сначала низкий" };
+
+    private List<CategoryInfo>? categories;
+    private uint categoryId;
+    private string categorySearch = "";
+    private int sortMode;
+    private bool onlyMyJob, onlyOwned, onlyMarketable;
+    private DateTime lastFilter;
 
     private const int MaxRows = 500;
+    private const int MaxCategoryRows = 5000;
 
     private List<ItemRow>? all;
     private List<ItemRow> results = new();
@@ -45,19 +59,18 @@ internal sealed class ItemsTab
         all ??= BuildIndex();
 
         Theme.Header("Предметы", "Поиск по всей базе предметов: статы, кто носит, сколько у тебя есть");
-        Theme.Search("##isearch", "Название предмета (минимум 2 буквы)…", ref search);
+        Theme.Search("##isearch", categoryId != 0 ? "Название (можно не вводить — покажу всю категорию)…" : "Название предмета (минимум 2 буквы)…", ref search);
+        DrawFilters();
 
         var term = search.Trim();
-        if (search != lastSearch)
+        // «Для моей профессии» и «есть у меня» зависят от игры — пересчитываем раз в пару секунд
+        var jobId = PlayerInfo.Ready ? Plugin.PlayerState.ClassJob.RowId : 0;
+        var key = $"{search}|{categoryId}|{sortMode}|{onlyMyJob}|{onlyOwned}|{onlyMarketable}|{jobId}";
+        if (key != lastSearch || ((onlyOwned || onlyMyJob) && DateTime.Now - lastFilter > TimeSpan.FromSeconds(2)))
         {
-            lastSearch = search;
-            results = term.Length < 2
-                ? new List<ItemRow>()
-                : all.Where(i => NameTranslations.Matches(i.Name, term))
-                     .OrderByDescending(i => i.Name.Equals(term, StringComparison.OrdinalIgnoreCase))
-                     .ThenBy(i => i.Name.Length)
-                     .Take(MaxRows)
-                     .ToList();
+            lastSearch = key;
+            lastFilter = DateTime.Now;
+            results = Filter(term, jobId);
         }
 
         if (pendingSelect != 0)
@@ -67,9 +80,10 @@ internal sealed class ItemsTab
             pendingSelect = 0;
         }
 
+        var limit = categoryId != 0 ? MaxCategoryRows : MaxRows;
         ImGui.TextColored(Theme.TextDim,
-            term.Length < 2 ? "Начни вводить название" :
-            results.Count >= MaxRows ? $"Показаны первые {MaxRows}, уточни запрос" : $"Найдено: {results.Count}");
+            term.Length < 2 && categoryId == 0 ? "Начни вводить название или выбери категорию" :
+            results.Count >= limit ? $"Показаны первые {limit}, уточни запрос" : $"Найдено: {results.Count}");
 
         var avail = ImGui.GetContentRegionAvail();
         var rowH = 42 * Theme.S;
@@ -107,6 +121,72 @@ internal sealed class ItemsTab
         ImGui.EndChild();
     }
 
+    private List<ItemRow> Filter(string term, uint jobId)
+    {
+        if (term.Length < 2 && categoryId == 0) return new List<ItemRow>();
+        var job = onlyMyJob && jobId != 0 ? GuideData.JobAbbrEnglish(jobId) : "";
+        IEnumerable<ItemRow> q = all!;
+        if (categoryId != 0) q = q.Where(i => i.CategoryId == categoryId);
+        if (term.Length >= 2) q = q.Where(i => NameTranslations.Matches(i.Name, term));
+        if (onlyMarketable) q = q.Where(i => i.Marketable);
+        if (job.Length > 0) q = q.Where(i => i.JobCategory != 0 && data.JobInCategory(i.JobCategory, job));
+        if (onlyOwned) q = q.Where(i => PlayerInfo.ItemCount(i.Id) > 0);
+        q = sortMode switch
+        {
+            1 => q.OrderBy(i => NameTranslations.Show(i.Name)),
+            2 => q.OrderByDescending(i => i.ItemLevel).ThenBy(i => i.Name),
+            3 => q.OrderBy(i => i.ItemLevel).ThenBy(i => i.Name),
+            4 => q.OrderByDescending(i => i.EquipLevel).ThenByDescending(i => i.ItemLevel),
+            5 => q.OrderBy(i => i.EquipLevel).ThenBy(i => i.ItemLevel),
+            _ => term.Length >= 2
+                ? q.OrderByDescending(i => i.Name.Equals(term, StringComparison.OrdinalIgnoreCase)).ThenBy(i => i.Name.Length)
+                : q.OrderByDescending(i => i.ItemLevel).ThenBy(i => i.Name),
+        };
+        return q.Take(categoryId != 0 ? MaxCategoryRows : MaxRows).ToList();
+    }
+
+    private void DrawFilters()
+    {
+        categories ??= Plugin.Data.GetExcelSheet<ItemUICategory>()
+            .Where(c => !c.Name.IsEmpty)
+            .Select(c => new CategoryInfo(c.RowId, c.Name.ExtractText(), c.OrderMajor, c.OrderMinor))
+            .OrderBy(c => c.Major is >= 1 and <= 7 ? c.Major : 99).ThenBy(c => c.Minor).ToList();
+        var cur = categories.FirstOrDefault(c => c.Id == categoryId);
+        ImGui.SetNextItemWidth(260 * Theme.S);
+        if (ImGui.BeginCombo("##icat", cur is null ? "Все категории" : NameTranslations.Show(cur.Name), ImGuiComboFlags.HeightLarge))
+        {
+            ImGui.SetNextItemWidth(-1);
+            ImGui.InputTextWithHint("##icatsearch", "Найти категорию…", ref categorySearch, 40);
+            if (ImGui.Selectable("Все категории", categoryId == 0)) categoryId = 0;
+            var lastMajor = -1;
+            foreach (var c in categories)
+            {
+                if (categorySearch.Length > 0 && !NameTranslations.Matches(c.Name, categorySearch)) continue;
+                var major = c.Major is >= 1 and <= 7 ? c.Major : 0;
+                if (major != lastMajor && categorySearch.Length == 0)
+                {
+                    lastMajor = major;
+                    ImGui.TextColored(Theme.Gold, MajorNames[major]);
+                }
+                if (ImGui.Selectable($"   {NameTranslations.Show(c.Name)}##icat{c.Id}", categoryId == c.Id)) categoryId = c.Id;
+            }
+            ImGui.EndCombo();
+        }
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(230 * Theme.S);
+        if (ImGui.BeginCombo("##isort", SortNames[sortMode]))
+        {
+            for (var i = 0; i < SortNames.Length; i++)
+                if (ImGui.Selectable(SortNames[i], sortMode == i)) sortMode = i;
+            ImGui.EndCombo();
+        }
+        ImGui.Checkbox("Для моей профессии", ref onlyMyJob);
+        ImGui.SameLine();
+        ImGui.Checkbox("Есть у меня", ref onlyOwned);
+        ImGui.SameLine();
+        ImGui.Checkbox("Продаётся на рынке", ref onlyMarketable);
+    }
+
     private static List<ItemRow> BuildIndex()
     {
         var list = new List<ItemRow>();
@@ -120,7 +200,11 @@ internal sealed class ItemsTab
                 name,
                 item.Icon,
                 item.LevelItem.RowId,
-                item.ItemUICategory.ValueNullable?.Name.ExtractText() ?? ""));
+                item.ItemUICategory.ValueNullable?.Name.ExtractText() ?? "",
+                item.ItemUICategory.RowId,
+                item.LevelEquip,
+                item.ClassJobCategory.RowId,
+                item.ItemSearchCategory.RowId != 0 && !item.IsUntradable));
         }
         return list;
     }

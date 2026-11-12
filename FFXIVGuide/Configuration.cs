@@ -75,6 +75,8 @@ public sealed class Configuration : IPluginConfiguration
     public Dictionary<string, List<FFXIVGuide.Data.DiarySnapshot>> Diary { get; set; } = new();
     public int AccentColor { get; set; } = 0;
     public float UiScale { get; set; } = 1f;
+    /// <summary>Размер картинок в списках коллекций: 0 мелкие, 1 средние, 2 крупные, 3 плитки.</summary>
+    public int PreviewSize { get; set; } = 1;
 
     // Механики
     public bool DutyOverlay { get; set; } = true;

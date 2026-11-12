@@ -613,6 +613,88 @@ internal static class Theme
     /// <summary>
     /// Виртуальный список: рисует только видимые строки фиксированной высоты.
     /// </summary>
+    // ───────────── Размер картинок в списках ─────────────
+
+    private static readonly string[] PreviewNames = { "Мелкие", "Средние", "Крупные", "Плитки" };
+
+    /// <summary>Высота строки списка по настройке размера картинок.</summary>
+    public static float PreviewRowHeight => Plugin.Config.PreviewSize switch { 0 => 40f, 2 => 96f, _ => 62f } * S;
+
+    /// <summary>Включены ли плитки с большими картинками (только там, где они поддерживаются).</summary>
+    public static bool PreviewTiles(bool supported) => supported && Plugin.Config.PreviewSize >= 3;
+
+    /// <summary>Переключатель размера картинок; tiles — показывать ли вариант «Плитки».</summary>
+    public static void PreviewSizeChips(string id, bool tiles)
+    {
+        var names = tiles ? PreviewNames : PreviewNames[..3];
+        var v = Math.Min(Plugin.Config.PreviewSize, names.Length - 1);
+        ImGui.TextColored(TextDim, "Картинки:");
+        ImGui.SameLine();
+        if (Chips(id, names, ref v)) { Plugin.Config.PreviewSize = v; Plugin.Config.Save(); }
+    }
+
+    /// <summary>Сетка плиток с большими картинками; рисует только видимые ряды.</summary>
+    public static void TileGrid(int count, float tileWidth, Func<int, (string Id, uint Image, uint Fallback, string Title, string? Badge, Vector4 BadgeColor, bool Selected)> item, Action<int> clicked)
+    {
+        var avail = ImGui.GetContentRegionAvail().X;
+        var gap = 8f * S;
+        var cols = Math.Max(1, (int)((avail + gap) / (tileWidth + gap)));
+        var w = (avail - gap * (cols - 1)) / cols;
+        var h = w + ImGui.GetTextLineHeight() * 2 + 14 * S;
+        var rows = (count + cols - 1) / cols;
+        VirtualList(rows, h, r =>
+        {
+            for (var c = 0; c < cols; c++)
+            {
+                var i = r * cols + c;
+                if (i >= count) break;
+                if (c > 0) ImGui.SameLine(0, gap);
+                var t = item(i);
+                if (Tile(t.Id, t.Image, t.Fallback, t.Title, t.Badge, t.BadgeColor, t.Selected, w, h)) clicked(i);
+            }
+        });
+    }
+
+    private static bool Tile(string id, uint image, uint fallback, string title, string? badge, Vector4 badgeColor, bool selected, float w, float h)
+    {
+        title = NameTranslations.Show(title);
+        var pos = ImGui.GetCursorScreenPos();
+        var clicked = ImGui.InvisibleButton(id, new Vector2(w, h));
+        var hovered = ImGui.IsItemHovered();
+        var dl = ImGui.GetWindowDrawList();
+        dl.AddRectFilled(pos, pos + new Vector2(w, h), U32(selected ? CardSelected : hovered ? CardHover : CardBg), 8f * S);
+        if (selected || hovered) dl.AddRect(pos, pos + new Vector2(w, h), U32(Alpha(Gold, selected ? 0.7f : 0.35f)), 8f * S);
+        var pad = 6f * S;
+        var img = w - pad * 2;
+        var wrap = Plugin.Textures.GetFromGameIcon(new GameIconLookup(image)).GetWrapOrEmpty();
+        if (wrap.Width <= 1 && fallback != 0) wrap = Plugin.Textures.GetFromGameIcon(new GameIconLookup(fallback)).GetWrapOrEmpty();
+        dl.AddImageRounded(wrap.Handle, pos + new Vector2(pad), pos + new Vector2(pad + img), Vector2.Zero, Vector2.One, 0xFFFFFFFF, 6f * S);
+        if (badge is not null) Badge(pos + new Vector2(pad + 4 * S, pad + 4 * S), badge, badgeColor);
+        // Название — до двух строк под картинкой
+        var text = title;
+        var maxW = w - pad * 2;
+        var lines = new List<string>();
+        while (text.Length > 0 && lines.Count < 2)
+        {
+            var n = text.Length;
+            while (n > 1 && ImGui.CalcTextSize(text[..n]).X > maxW) n--;
+            if (n < text.Length && lines.Count == 1 && n > 1) { lines.Add(text[..(n - 1)] + "…"); break; }
+            var cut = n < text.Length ? text.LastIndexOf(' ', n - 1) : -1;
+            if (cut <= 0) cut = n;
+            lines.Add(text[..cut].Trim());
+            text = text[cut..].Trim();
+        }
+        var y = pos.Y + pad + img + 4 * S;
+        foreach (var l in lines)
+        {
+            var sz = ImGui.CalcTextSize(l);
+            dl.AddText(new Vector2(pos.X + (w - sz.X) / 2, y), U32(hovered ? Gold : Text), l);
+            y += ImGui.GetTextLineHeight();
+        }
+        if (hovered) ImGui.SetTooltip(title);
+        return clicked;
+    }
+
     public static void VirtualList(int count, float rowHeight, Action<int> drawRow)
     {
         var spacing = ImGui.GetStyle().ItemSpacing.Y;

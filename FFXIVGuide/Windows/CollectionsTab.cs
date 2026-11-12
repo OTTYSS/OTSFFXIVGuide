@@ -269,12 +269,24 @@ internal sealed class CollectionsTab
             .Where(e => search.Length == 0 || NameTranslations.Matches(e.Name, search))
             .OrderBy(e => e.Name)
             .ToList();
+        var bigImages = kind.Title is "Маунты" or "Минёны";
+        Theme.PreviewSizeChips("csize", bigImages);
         ImGui.TextColored(Theme.TextDim, $"{kind.Title}: {rows.Count}");
         Translator.Instance.Request(rows.Where(e => e.How is not null && e.How.StartsWith("Obtained", StringComparison.Ordinal)).Select(e => e.How!).Distinct());
 
         if (ImGui.BeginChild("##clist", Vector2.Zero))
         {
-            var rowH = 46 * Theme.S;
+            var rowH = Theme.PreviewRowHeight;
+            if (Theme.PreviewTiles(bigImages))
+            {
+                Theme.TileGrid(rows.Count, 150 * Theme.S,
+                    i => ($"##ct{rows[i].Id}", rows[i].Icon + 64000, rows[i].Icon, rows[i].Name, show == 1 ? "есть" : null, Theme.Green, false),
+                    i =>
+                    {
+                        if (rows[i].ItemId != 0) WikiNav.Open(WikiKind.Item, rows[i].ItemId, Plugin.Data.GetExcelSheet<Item>().GetRowOrDefault(rows[i].ItemId)?.Name.ExtractText() ?? "");
+                    });
+            }
+            else
             Theme.VirtualList(rows.Count, rowH, i =>
             {
                 var e = rows[i];

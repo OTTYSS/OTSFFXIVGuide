@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor, SideStories }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor, SideStories, Mounts }
 
 public sealed class MainWindow : Window
 {
@@ -95,8 +95,9 @@ public sealed class MainWindow : Window
             (MainTab.Leveling, FontAwesomeIcon.ArrowCircleUp, "Прокачка"),
             (MainTab.Achievements, FontAwesomeIcon.Trophy, "Достижения"),
             (MainTab.Diary, FontAwesomeIcon.ChartLine, "Дневник"),
+            (MainTab.Mounts, FontAwesomeIcon.Horse, "Маунты"),
             (MainTab.Collections, FontAwesomeIcon.Paw, "Коллекции"),
-            (MainTab.MountFarm, FontAwesomeIcon.Horse, "Фарм коллекций"),
+            (MainTab.MountFarm, FontAwesomeIcon.Dungeon, "Фарм коллекций"),
             (MainTab.Unlocks, FontAwesomeIcon.Unlock, "Разблокировки"),
             (MainTab.Glamour, FontAwesomeIcon.Tshirt, "Гламур"),
         }),
@@ -150,6 +151,7 @@ public sealed class MainWindow : Window
         relics = new RelicTab(data);
         weekly = new WeeklyTab(data);
         mountFarm = new MountFarmTab(data);
+        mounts = new MountsTab(data, market);
         furniture = new FurnitureTab(market);
         ventures = new VenturesTab(data, market);
         occult = new OccultTab();
@@ -185,6 +187,7 @@ public sealed class MainWindow : Window
         search.Providers.Add(t => huntingLog.Search(t, Go));
         search.Providers.Add(t => dyes.Search(t, Go));
         search.Providers.Add(t => sideStories.Search(t, Go));
+        search.Providers.Add(t => mounts.Search(t, Go));
         inventory = new InventoryTab(market);
         craft = new CraftTab(market);
         hunt = new HuntTab(hunts);
@@ -262,6 +265,7 @@ public sealed class MainWindow : Window
     private readonly WeeklyTab weekly;
     private readonly BisTab bis = new();
     private readonly MountFarmTab mountFarm;
+    private readonly MountsTab mounts;
     private readonly FurnitureTab furniture;
     private readonly VenturesTab ventures;
     private readonly OccultTab occult;
@@ -492,7 +496,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.15");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.16");
         }
 
         ImGui.EndChild();
@@ -752,6 +756,7 @@ public sealed class MainWindow : Window
             case MainTab.Weekly: weekly.Draw(); break;
             case MainTab.Bis: bis.Draw(); break;
             case MainTab.MountFarm: mountFarm.Draw(); break;
+            case MainTab.Mounts: mounts.Draw(); break;
             case MainTab.Furniture: furniture.Draw(); break;
             case MainTab.Ventures: ventures.Draw(); break;
             case MainTab.Occult: occult.Draw(); break;
