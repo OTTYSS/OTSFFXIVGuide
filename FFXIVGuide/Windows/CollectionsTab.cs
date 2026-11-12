@@ -70,7 +70,7 @@ internal sealed class CollectionsTab
                 Title = "Карты Triple Triad",
                 Load = () => Plugin.Data.GetExcelSheet<TripleTriadCard>()
                     .Where(m => !m.Name.IsEmpty)
-                    .Select(m => new Entry(m.RowId, m.Name.ExtractText(), 0, ItemFor(ActionCard, m.RowId))).ToList(),
+                    .Select(m => new Entry(m.RowId, m.Name.ExtractText(), 87000 + m.RowId, ItemFor(ActionCard, m.RowId))).ToList(),
                 Unlocked = id => Plugin.Data.GetExcelSheet<TripleTriadCard>().GetRowOrDefault(id) is { } r && u.IsTripleTriadCardUnlocked(r),
             },
             new Kind
@@ -90,8 +90,8 @@ internal sealed class CollectionsTab
                 Unlocked = id => Plugin.Data.GetExcelSheet<Ornament>().GetRowOrDefault(id) is { } r && u.IsOrnamentUnlocked(r),
             },
             ItemKind("Причёски и раскраска", HairstyleItems, HairPreviewIcon),
-            ItemKind("Очки", () => ItemsWithAction(ActionGlasses)),
-            ItemKind("Framer's kits", () => ItemsWithAction(ActionFramersKit)),
+            ItemKind("Очки", () => ItemsWithAction(ActionGlasses), GlassesIcon),
+            ItemKind("Framer's kits", () => ItemsWithAction(ActionFramersKit), KitIcon),
             new Kind
             {
                 Title = "Титулы",
@@ -102,21 +102,21 @@ internal sealed class CollectionsTab
             {
                 Title = "Plate: фоны",
                 Load = () => Plugin.Data.GetExcelSheet<BannerBg>().Where(b => !b.Name.IsEmpty)
-                    .Select(b => PlateEntry(b.RowId, b.Name.ExtractText(), (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
+                    .Select(b => PlateEntry(b.RowId, b.Name.ExtractText(), b.Image != 0 ? (uint)b.Image : (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
                 Unlocked = id => Plugin.Data.GetExcelSheet<BannerBg>().GetRowOrDefault(id) is { } r && u.IsBannerBgUnlocked(r),
             },
             new Kind
             {
                 Title = "Plate: рамки",
                 Load = () => Plugin.Data.GetExcelSheet<BannerFrame>().Where(b => !b.Name.IsEmpty)
-                    .Select(b => PlateEntry(b.RowId, b.Name.ExtractText(), (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
+                    .Select(b => PlateEntry(b.RowId, b.Name.ExtractText(), b.Image != 0 ? (uint)b.Image : (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
                 Unlocked = id => Plugin.Data.GetExcelSheet<BannerFrame>().GetRowOrDefault(id) is { } r && u.IsBannerFrameUnlocked(r),
             },
             new Kind
             {
                 Title = "Plate: акценты",
                 Load = () => Plugin.Data.GetExcelSheet<BannerDecoration>().Where(b => !b.Name.IsEmpty)
-                    .Select(b => PlateEntry(b.RowId, b.Name.ExtractText(), (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
+                    .Select(b => PlateEntry(b.RowId, b.Name.ExtractText(), b.Image != 0 ? (uint)b.Image : (uint)b.Icon, b.UnlockCondition.RowId)).OfType<Entry>().ToList(),
                 Unlocked = id => Plugin.Data.GetExcelSheet<BannerDecoration>().GetRowOrDefault(id) is { } r && u.IsBannerDecorationUnlocked(r),
             },
             new Kind
@@ -204,6 +204,26 @@ internal sealed class CollectionsTab
             .Select(i => new Entry(i.RowId, i.Name.ExtractText(), iconFor?.Invoke(i.RowId) is { } ic and not 0 ? ic : i.Icon, i.RowId)).ToList(),
         Unlocked = id => Plugin.Data.GetExcelSheet<Item>().GetRowOrDefault(id) is { } r && Plugin.Unlocks.IsItemUnlocked(r),
     };
+
+    /// <summary>Книга очков → значок самих очков (AdditionalData книги — строка таблицы Glasses).</summary>
+    private static uint GlassesIcon(uint itemId) =>
+        Plugin.Data.GetExcelSheet<Item>().GetRowOrDefault(itemId) is { } it
+        && Plugin.Data.GetExcelSheet<Glasses>().GetRowOrDefault(it.AdditionalData.RowId) is { } g ? (uint)g.Icon : 0;
+
+    private static Dictionary<uint, uint>? kitImages;
+
+    /// <summary>Framer's kit → картинка фона (или рамки, акцента), который он открывает.</summary>
+    private static uint KitIcon(uint itemId)
+    {
+        if (kitImages is null)
+        {
+            kitImages = new();
+            foreach (var b in Plugin.Data.GetExcelSheet<BannerBg>()) if (b.Image != 0) kitImages.TryAdd(b.UnlockCondition.RowId, (uint)b.Image);
+            foreach (var b in Plugin.Data.GetExcelSheet<BannerFrame>()) if (b.Image != 0) kitImages.TryAdd(b.UnlockCondition.RowId, (uint)b.Image);
+            foreach (var b in Plugin.Data.GetExcelSheet<BannerDecoration>()) if (b.Image != 0) kitImages.TryAdd(b.UnlockCondition.RowId, (uint)b.Image);
+        }
+        return Plugin.Data.GetExcelSheet<Item>().GetRowOrDefault(itemId) is { } it ? kitImages.GetValueOrDefault(it.AdditionalData.RowId) : 0;
+    }
 
     private static Dictionary<uint, uint>? hairIcons;
 
@@ -297,8 +317,9 @@ internal sealed class CollectionsTab
             .Where(e => search.Length == 0 || NameTranslations.Matches(e.Name, search))
             .OrderBy(e => e.Name)
             .ToList();
-        var bigImages = kind.Title is "Маунты" or "Минёны" or "Причёски и раскраска";
-        var renderOffset = kind.Title is "Маунты" or "Минёны" ? 64000u : 0u;
+        // Плитки — для видов, у которых есть свои картинки; у карт в плитке большая картинка (088xxx)
+        var bigImages = kind.Title is not ("Оркестрион" or "Титулы" or "Plate: позы");
+        var renderOffset = kind.Title is "Маунты" or "Минёны" ? 64000u : kind.Title == "Карты Triple Triad" ? 1000u : 0u;
         Theme.PreviewSizeChips("csize", bigImages);
         ImGui.TextColored(Theme.TextDim, $"{kind.Title}: {rows.Count}");
         Translator.Instance.Request(rows.Where(e => e.How is not null && e.How.StartsWith("Obtained", StringComparison.Ordinal)).Select(e => e.How!).Distinct());
