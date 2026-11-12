@@ -50,7 +50,11 @@ public sealed class OfflineIndex
     }
 
     private static uint U(JsonElement e) => e.ValueKind == JsonValueKind.Number && e.TryGetUInt32(out var v) ? v : e.ValueKind == JsonValueKind.String && uint.TryParse(e.GetString(), out var s) ? s : 0;
-    private static int I(JsonElement e, string n) => e.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
+    // Числа в файлах Teamcraft бывают дробными (например, цены Mog Station) — округляем, а не падаем
+    private static int I(JsonElement e, string n) =>
+        e.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.Number
+            ? v.TryGetInt32(out var i) ? i : v.TryGetDouble(out var d) ? (int)Math.Round(d) : 0
+            : 0;
     private static float F(JsonElement e, string n) => e.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.Number ? (float)v.GetDouble() : 0;
     private static string S(JsonElement e, string n) => e.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
 
@@ -197,8 +201,8 @@ public sealed class OfflineIndex
                     if (!uint.TryParse(p.Name, out var fish)) continue;
                     var list = p.Value.EnumerateArray().Select(o => new FishSrc(
                         o.TryGetProperty("spot", out var sp) ? U(sp) : 0, I(o, "hookset"), I(o, "tug"), o.TryGetProperty("bait", out var bt) ? U(bt) : 0,
-                        o.TryGetProperty("spawn", out var s1) && s1.ValueKind == JsonValueKind.Number ? s1.GetInt32() : -1,
-                        o.TryGetProperty("duration", out var d1) && d1.ValueKind == JsonValueKind.Number ? d1.GetInt32() : 0,
+                        o.TryGetProperty("spawn", out var s1) && s1.ValueKind == JsonValueKind.Number ? (int)Math.Round(s1.GetDouble()) : -1,
+                        o.TryGetProperty("duration", out var d1) && d1.ValueKind == JsonValueKind.Number ? (int)Math.Round(d1.GetDouble()) : 0,
                         o.TryGetProperty("weathers", out var w) && w.ValueKind == JsonValueKind.Array ? w.EnumerateArray().Select(U).ToArray() : Array.Empty<uint>(),
                         o.TryGetProperty("weathersFrom", out var wf) && wf.ValueKind == JsonValueKind.Array ? wf.EnumerateArray().Select(U).ToArray() : Array.Empty<uint>()))
                         .ToList();

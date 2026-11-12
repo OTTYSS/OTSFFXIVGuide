@@ -89,7 +89,7 @@ internal sealed class CollectionsTab
                     .Select(m => new Entry(m.RowId, GuideData.Capitalize(m.Singular.ExtractText()), m.Icon, ItemFor(ActionOrnament, m.RowId))).ToList(),
                 Unlocked = id => Plugin.Data.GetExcelSheet<Ornament>().GetRowOrDefault(id) is { } r && u.IsOrnamentUnlocked(r),
             },
-            ItemKind("Причёски и раскраска", HairstyleItems),
+            ItemKind("Причёски и раскраска", HairstyleItems, HairPreviewIcon),
             ItemKind("Очки", () => ItemsWithAction(ActionGlasses)),
             ItemKind("Framer's kits", () => ItemsWithAction(ActionFramersKit)),
             new Kind
@@ -197,13 +197,41 @@ internal sealed class CollectionsTab
     }
 
     /// <summary>Коллекция, которая открывается предметами: запись = сам предмет.</summary>
-    private static Kind ItemKind(string title, Func<IEnumerable<Item>> items) => new()
+    private static Kind ItemKind(string title, Func<IEnumerable<Item>> items, Func<uint, uint>? iconFor = null) => new()
     {
         Title = title,
         Load = () => items().Where(i => !i.Name.IsEmpty)
-            .Select(i => new Entry(i.RowId, i.Name.ExtractText(), i.Icon, i.RowId)).ToList(),
+            .Select(i => new Entry(i.RowId, i.Name.ExtractText(), iconFor?.Invoke(i.RowId) is { } ic and not 0 ? ic : i.Icon, i.RowId)).ToList(),
         Unlocked = id => Plugin.Data.GetExcelSheet<Item>().GetRowOrDefault(id) is { } r && Plugin.Unlocks.IsItemUnlocked(r),
     };
+
+    private static Dictionary<uint, uint>? hairIcons;
+
+    /// <summary>
+    /// Картинка самой причёски вместо значка книги: берём варианты внешности для расы, племени и пола
+    /// текущего персонажа (HairMakeType), у которых подсказкой указана эта книга.
+    /// </summary>
+    private static unsafe uint HairPreviewIcon(uint itemId)
+    {
+        if (hairIcons is null)
+        {
+            hairIcons = new();
+            var cmc = Plugin.Data.GetExcelSheet<CharaMakeCustomize>();
+            var ps = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
+            var mine = new HashSet<uint>();
+            if (ps != null)
+                foreach (var h in Plugin.Data.GetExcelSheet<HairMakeType>())
+                    if (h.Race.RowId == ps->Race && h.Tribe.RowId == ps->Tribe && h.Gender == ps->Sex)
+                        foreach (var st in h.CharaMakeStruct)
+                            foreach (var param in st.SubMenuParam) mine.Add(param);
+            // Сначала варианты своей расы, потом любые
+            foreach (var pass in new[] { true, false })
+                foreach (var c in cmc)
+                    if (c.HintItem.RowId != 0 && c.Icon != 0 && (!pass || mine.Contains(c.RowId)))
+                        hairIcons.TryAdd(c.HintItem.RowId, c.Icon);
+        }
+        return hairIcons.GetValueOrDefault(itemId);
+    }
 
     private static IEnumerable<Item> ItemsWithAction(uint action) =>
         Plugin.Data.GetExcelSheet<Item>().Where(i => i.ItemAction.ValueNullable is { } a && a.Action.RowId == action);
@@ -269,7 +297,8 @@ internal sealed class CollectionsTab
             .Where(e => search.Length == 0 || NameTranslations.Matches(e.Name, search))
             .OrderBy(e => e.Name)
             .ToList();
-        var bigImages = kind.Title is "Маунты" or "Минёны";
+        var bigImages = kind.Title is "Маунты" or "Минёны" or "Причёски и раскраска";
+        var renderOffset = kind.Title is "Маунты" or "Минёны" ? 64000u : 0u;
         Theme.PreviewSizeChips("csize", bigImages);
         ImGui.TextColored(Theme.TextDim, $"{kind.Title}: {rows.Count}");
         Translator.Instance.Request(rows.Where(e => e.How is not null && e.How.StartsWith("Obtained", StringComparison.Ordinal)).Select(e => e.How!).Distinct());
@@ -280,7 +309,7 @@ internal sealed class CollectionsTab
             if (Theme.PreviewTiles(bigImages))
             {
                 Theme.TileGrid(rows.Count, 150 * Theme.S,
-                    i => ($"##ct{rows[i].Id}", rows[i].Icon + 64000, rows[i].Icon, rows[i].Name, show == 1 ? "есть" : null, Theme.Green, false),
+                    i => ($"##ct{rows[i].Id}", rows[i].Icon + renderOffset, rows[i].Icon, rows[i].Name, show == 1 ? "есть" : null, Theme.Green, false),
                     i =>
                     {
                         if (rows[i].ItemId != 0) WikiNav.Open(WikiKind.Item, rows[i].ItemId, Plugin.Data.GetExcelSheet<Item>().GetRowOrDefault(rows[i].ItemId)?.Name.ExtractText() ?? "");

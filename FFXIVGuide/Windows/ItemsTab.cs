@@ -225,6 +225,19 @@ internal sealed class ItemsTab
         {
             var pos = ImGui.GetCursorScreenPos();
             Theme.GameIcon(row.Icon, pos, 52 * Theme.S, 6f);
+            // Нажатие на значок — увеличить картинку
+            ImGui.SetCursorScreenPos(pos);
+            if (ImGui.InvisibleButton("##izoombtn", new Vector2(52 * Theme.S))) ImGui.OpenPopup("##izoom");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Нажми, чтобы увеличить");
+            if (ImGui.BeginPopup("##izoom"))
+            {
+                var big = Math.Min(320 * Theme.S, ImGui.GetMainViewport().Size.Y * 0.6f);
+                var p = ImGui.GetCursorScreenPos();
+                Theme.GameIcon(row.Icon, p, big, 10f);
+                ImGui.Dummy(new Vector2(big));
+                ImGui.TextColored(Theme.TextDim, "Значок предмета из игры. Как вещь выглядит на персонаже — кнопка «Примерить».");
+                ImGui.EndPopup();
+            }
             ImGui.SetCursorScreenPos(pos + new Vector2(62 * Theme.S, 2 * Theme.S));
             ImGui.BeginGroup();
             Theme.LargeText(RarityColors[Math.Min(it.Rarity, (byte)7)], row.Name);
@@ -237,6 +250,14 @@ internal sealed class ItemsTab
             if (it.MateriaSlotCount > 0) { Theme.InlineBadge($"материя ×{it.MateriaSlotCount}", Theme.Blue); ImGui.SameLine(); }
             Theme.InlineBadge(it.IsUntradable ? "не продаётся" : "рынок", it.IsUntradable ? Theme.Gray : Theme.Green);
             WikiNav.FavoriteButton(new WikiLink(WikiKind.Item, row.Id, row.Name));
+            if (it.EquipSlotCategory.RowId != 0 && PlayerInfo.Ready)
+            {
+                ImGui.SameLine();
+                // Открывает игровое окно примерки (Try On) — только просмотр
+                if (Theme.IconButton("itryon", FontAwesomeIcon.Tshirt, "Примерить"))
+                    FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentTryon.TryOn(0, row.Id);
+                if (ImGui.IsItemHovered()) ImGui.SetTooltip("Открыть окно примерки игры: посмотреть вещь на своём персонаже");
+            }
 
             if (PlayerInfo.Ready)
             {
