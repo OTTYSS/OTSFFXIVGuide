@@ -125,7 +125,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Commands.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | patch | mentor | side | farm | fish | blu | target | peek | mini | overlay | settings",
+            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | patch | mentor | side | farm | housing | fish | blu | target | peek | mini | overlay | settings",
         });
 
         PluginInterface.UiBuilder.Draw += windows.Draw;
@@ -221,6 +221,7 @@ public sealed class Plugin : IDalamudPlugin
             "events" or "deliveries" or "house" or "события" => MainTab.Weekly,
             "bis" => MainTab.Bis,
             "mounts" or "маунты" => MainTab.Mounts,
+            "housing" or "plots" or "участки" or "жильё" or "жилье" => MainTab.Housing,
             "farm" or "фарм" => MainTab.MountFarm,
             "furniture" or "мебель" => MainTab.Furniture,
             "ventures" or "вылазки" => MainTab.Ventures,

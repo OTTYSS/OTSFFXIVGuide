@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor, SideStories, Mounts }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor, SideStories, Mounts, Housing }
 
 public sealed class MainWindow : Window
 {
@@ -66,6 +66,7 @@ public sealed class MainWindow : Window
             (MainTab.Bestiary, FontAwesomeIcon.Skull, "Бестиарий"),
             (MainTab.Wiki, FontAwesomeIcon.BookOpen, "Зоны, NPC, рыбалка, избранное"),
             (MainTab.Furniture, FontAwesomeIcon.Couch, "Мебель"),
+            (MainTab.Housing, FontAwesomeIcon.Home, "Участки под дом"),
             (MainTab.Jobs, FontAwesomeIcon.UserGraduate, "Профессии"),
             (MainTab.Statuses, FontAwesomeIcon.Magic, "Статусы"),
             (MainTab.Salvage, FontAwesomeIcon.Recycle, "Разборка и сундуки"),
@@ -165,6 +166,7 @@ public sealed class MainWindow : Window
         progress = new ProgressTab(data, Go);
         patch = new PatchTab();
         mentor = new MentorTab();
+        housing = new HousingTab();
         recipeBooks = new RecipeBooksTab(market);
         pvp = new PvPTab();
         variant = new VariantTab(data);
@@ -279,6 +281,7 @@ public sealed class MainWindow : Window
     private readonly ProgressTab progress;
     private readonly PatchTab patch;
     private readonly MentorTab mentor;
+    private readonly HousingTab housing;
     private readonly RecipeBooksTab recipeBooks;
     private readonly PvPTab pvp;
     private readonly VariantTab variant;
@@ -496,7 +499,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.18");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.19");
         }
 
         ImGui.EndChild();
@@ -770,6 +773,7 @@ public sealed class MainWindow : Window
             case MainTab.Progress: progress.Draw(); break;
             case MainTab.Patch: patch.Draw(); break;
             case MainTab.Mentor: mentor.Draw(); break;
+            case MainTab.Housing: housing.Draw(); break;
             case MainTab.RecipeBooks: recipeBooks.Draw(); break;
             case MainTab.PvP: Scrolled("pvp", pvp.Draw); break;
             case MainTab.Variant: variant.Draw(); break;
