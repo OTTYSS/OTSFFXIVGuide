@@ -101,7 +101,7 @@ internal sealed unsafe class CurrenciesTab
             try { Build(); }
             catch (Exception e) { Plugin.Log.Warning(e, "Валюты: не удалось разобрать магазины"); list = new(); }
         }
-        if (!PlayerInfo.Ready) { Theme.Panel("cnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
 
         var avail = ImGui.GetContentRegionAvail();
         var leftW = Math.Min(360 * Theme.S, avail.X * 0.42f);

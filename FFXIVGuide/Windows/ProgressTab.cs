@@ -77,7 +77,7 @@ internal sealed unsafe class ProgressTab
     public void Draw()
     {
         Theme.Header("Прогресс аккаунта", "Насколько закрыт аккаунт: сюжет, бои, коллекции, мир и профессии");
-        if (!PlayerInfo.Ready) { Theme.Panel("pgnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
         if (DateTime.Now >= next)
         {
             next = DateTime.Now.AddSeconds(10);

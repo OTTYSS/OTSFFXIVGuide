@@ -95,7 +95,7 @@ internal sealed unsafe class GlamourTab
     public void Draw()
     {
         Theme.Header("Гламур", "Что убрать в Armoire, какие наборы для Glamour Dresser почти собраны");
-        if (!PlayerInfo.Ready) { Theme.Panel("glnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
         Theme.Chips("glsec", Sections, ref section);
         if (Plugin.Config.DresserItems.Count == 0)
             ImGui.TextColored(Theme.Yellow, "Открой Glamour Dresser один раз — запомню, что в нём лежит.");

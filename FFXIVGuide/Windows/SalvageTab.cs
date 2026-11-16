@@ -62,7 +62,7 @@ internal sealed class SalvageTab
         var ix = OfflineDb.Instance.Index;
         if (ix is null)
         {
-            Theme.EmptyState(FontAwesomeIcon.Database, "Нужна офлайн-база", "Скачай базу в Настройки → База данных — там данные о разборке и сундуках.");
+            Theme.NeedOfflineDb("Данные о разборке и содержимом сундуков берутся из офлайн-базы (≈45 МБ).");
             return;
         }
         if (dbVersion != OfflineDb.Version) { dbVersion = OfflineDb.Version; Build(ix); }

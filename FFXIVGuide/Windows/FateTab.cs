@@ -23,7 +23,7 @@ internal sealed class FateTab
         Theme.Header("FATE и атэриты", "Активные FATE рядом и сколько Aether Currents собрано для полёта");
         if (!PlayerInfo.Ready)
         {
-            Theme.Panel("fnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем."));
+            Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры.");
             return;
         }
 

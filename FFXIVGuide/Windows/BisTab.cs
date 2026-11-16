@@ -215,7 +215,7 @@ internal sealed class BisTab
     public void Draw()
     {
         Theme.Header("BiS-сеты", "Лучший сет профессии: что уже собрано, чего не хватает и где взять");
-        if (!PlayerInfo.Ready || Plugin.PlayerState.ClassJob.ValueNullable is not { } job) { Theme.Panel("bnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready || Plugin.PlayerState.ClassJob.ValueNullable is not { } job) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
         var abbr = GuideData.JobAbbrEnglish(job.RowId).ToLowerInvariant();
 
         Theme.Panel("bsrc", () =>

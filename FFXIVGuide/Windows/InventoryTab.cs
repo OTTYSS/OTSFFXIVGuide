@@ -32,7 +32,7 @@ internal sealed class InventoryTab
 
         if (!PlayerInfo.Ready)
         {
-            Theme.Panel("inone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем, чтобы разобрать инвентарь."));
+            Theme.NeedLogin("Зайди в игру персонажем, чтобы разобрать инвентарь.");
             return;
         }
 

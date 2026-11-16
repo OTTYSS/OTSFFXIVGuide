@@ -78,7 +78,7 @@ internal sealed unsafe class MentorTab
         Theme.Header("Ментор", "Что осталось до короны ментора: боевой и ремесленный");
         var ach = AchievementState.Instance();
         var ps = PlayerState.Instance();
-        if (!PlayerInfo.Ready || ach == null || ps == null) { Theme.Panel("mnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready || ach == null || ps == null) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
 
         if (requested != 0 && ach->ProgressAchievementId == requested && ach->ProgressMax > 0)
         {

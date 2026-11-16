@@ -191,7 +191,7 @@ internal sealed class HousingTab
 
         if (rows is null)
         {
-            if (loading) Theme.Panel("hsload", () => ImGui.TextColored(Theme.TextDim, "Загружаю участки…"));
+            if (loading) Theme.Skeleton("hsload", 5, "Загружаю участки…");
             return;
         }
 
@@ -217,20 +217,26 @@ internal sealed class HousingTab
             return;
         }
 
-        var avail = ImGui.GetContentRegionAvail();
-        var leftW = selected is null ? avail.X : Theme.SplitWidth("hssplit", avail.X, avail.X * 0.55f);
-        ImGui.BeginChild("##hslist", new Vector2(leftW, 0));
-        DrawTable(list);
-        ImGui.EndChild();
+        // Клавиатура: ↑/↓ — выбор участка, Enter — флаг на карте, Esc — закрыть карточку (в шаблоне)
+        var idx = selected is { } k0 ? list.FindIndex(r => Key(r.P) == k0) : -1;
+        var enter = Theme.ListKeys(ref idx, list.Count);
+        if (idx >= 0) selected = Key(list[idx].P);
+        scrollToSelected = Theme.ListKeyMoved;
 
-        var sel = selected is { } s ? list.FirstOrDefault(r => r.P.WorldId == s.World && r.P.DistrictId == s.District && r.P.WardNumber == s.Ward && r.P.PlotNumber == s.Plot) : null;
-        if (sel is null) { selected = null; return; }
-        ImGui.SameLine();
-        Theme.Splitter("hssplit", avail.X, avail.X * 0.55f);
-        ImGui.SameLine();
-        ImGui.BeginChild("##hsdetail", new Vector2(0, 0));
-        DrawDetail(sel);
-        ImGui.EndChild();
+        var sel = selected is { } s ? list.FirstOrDefault(r => Key(r.P) == s) : null;
+        if (sel is null) selected = null;
+        if (enter && sel is not null) FlagPlot(sel.P);
+        Theme.MasterDetail("hs", sel is not null, () => DrawTable(list), () => DrawDetail(sel!), () => selected = null);
+    }
+
+    private bool scrollToSelected;
+
+    private static (uint, uint, int, int) Key(Plot p) => (p.WorldId, p.DistrictId, p.WardNumber, p.PlotNumber);
+
+    private static void FlagPlot(Plot p)
+    {
+        if (PlotMarker(p.DistrictId, p.PlotNumber) is not { } m) return;
+        Plugin.GameGui.OpenMapWithMapLink(new MapLinkPayload(p.DistrictId, m.Map.RowId, (int)(m.X * 1000f), (int)(m.Z * 1000f)));
     }
 
     private void DrawLotterySummary()
@@ -292,6 +298,7 @@ internal sealed class HousingTab
             if (ImGui.Selectable($"{r.District}, ward {p.WardNumber + 1}, участок {p.PlotNumber + 1}##hp{p.WorldId}_{p.DistrictId}_{p.WardNumber}_{p.PlotNumber}",
                     selected == key, ImGuiSelectableFlags.SpanAllColumns))
                 selected = selected == key ? null : key;
+            if (selected == key && scrollToSelected) ImGui.SetScrollHereY();
             ImGui.TableNextColumn();
             ImGui.TextColored(p.Size == 2 ? Theme.Gold : p.Size == 1 ? Theme.Blue : Theme.Text, SizeNames[Math.Clamp(p.Size, 0, 2)]);
             ImGui.TableNextColumn();
@@ -341,8 +348,7 @@ internal sealed class HousingTab
         var marker = PlotMarker(p.DistrictId, p.PlotNumber);
         if (marker is null) return;
         var (mapRow, x, z) = marker.Value;
-        if (Theme.IconButton("hsflag", FontAwesomeIcon.MapMarkerAlt, "Флаг на карте"))
-            Plugin.GameGui.OpenMapWithMapLink(new MapLinkPayload(p.DistrictId, mapRow.RowId, (int)(x * 1000f), (int)(z * 1000f)));
+        if (Theme.IconButton("hsflag", FontAwesomeIcon.MapMarkerAlt, "Флаг на карте")) FlagPlot(p);
         ImGui.SameLine();
         ImGui.TextColored(Theme.TextDim, "Фото домов в данных игры нет — ниже карта района с отмеченным участком.");
 

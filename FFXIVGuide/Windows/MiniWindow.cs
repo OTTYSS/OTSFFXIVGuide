@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Fates;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
@@ -29,8 +30,52 @@ public sealed class MiniWindow : Window
         RespectCloseHotkey = false;
     }
 
-    public override void PreDraw() => Theme.Push();
+    private const ImGuiWindowFlags BaseFlags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoScrollbar;
+
+    public override void PreDraw()
+    {
+        // Режим HUD: без фона и рамки, можно закрепить на месте
+        var cfg = Plugin.Config;
+        Flags = BaseFlags
+                | (cfg.MiniTransparent ? ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoTitleBar : ImGuiWindowFlags.None)
+                | (cfg.MiniLocked ? ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize : ImGuiWindowFlags.None);
+        Theme.Push();
+    }
+
     public override void PostDraw() => Theme.Pop();
+
+    /// <summary>Прячем мини-окно в бою и в катсценах (по настройке).</summary>
+    public override bool DrawConditions()
+    {
+        var cfg = Plugin.Config;
+        var c = Plugin.Condition;
+        if (cfg.MiniHideInCombat && c[ConditionFlag.InCombat]) return false;
+        if (cfg.MiniHideInCutscene && (c[ConditionFlag.OccupiedInCutSceneEvent] || c[ConditionFlag.WatchingCutscene]
+                                       || c[ConditionFlag.WatchingCutscene78] || c[ConditionFlag.BetweenAreas]))
+            return false;
+        return true;
+    }
+
+    /// <summary>Правый клик по мини-окну — быстрые настройки HUD.</summary>
+    private static void DrawContextMenu()
+    {
+        if (ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) && ImGui.IsMouseClicked(ImGuiMouseButton.Right)) ImGui.OpenPopup("##minictx");
+        if (!ImGui.BeginPopup("##minictx")) return;
+        var cfg = Plugin.Config;
+        var changed = false;
+        var t = cfg.MiniTransparent;
+        if (ImGui.Checkbox("Прозрачный режим (без фона и рамки)", ref t)) { cfg.MiniTransparent = t; changed = true; }
+        var l = cfg.MiniLocked;
+        if (ImGui.Checkbox("Закрепить на месте", ref l)) { cfg.MiniLocked = l; changed = true; }
+        var hc = cfg.MiniHideInCombat;
+        if (ImGui.Checkbox("Прятать в бою", ref hc)) { cfg.MiniHideInCombat = hc; changed = true; }
+        var hs = cfg.MiniHideInCutscene;
+        if (ImGui.Checkbox("Прятать в катсценах и при загрузке", ref hs)) { cfg.MiniHideInCutscene = hs; changed = true; }
+        ImGui.Separator();
+        if (ImGui.Selectable("Закрыть мини-окно")) Plugin.SetMiniWindow(false);
+        if (changed) cfg.Save();
+        ImGui.EndPopup();
+    }
 
     public override void OnClose()
     {
@@ -39,6 +84,12 @@ public sealed class MiniWindow : Window
     }
 
     public override void Draw()
+    {
+        DrawBody();
+        DrawContextMenu();
+    }
+
+    private void DrawBody()
     {
         if (!PlayerInfo.Ready)
         {

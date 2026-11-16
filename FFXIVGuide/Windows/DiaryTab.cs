@@ -38,7 +38,7 @@ internal sealed class DiaryTab
 
         if (!PlayerInfo.Ready)
         {
-            Theme.Panel("dnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем."));
+            Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры.");
             return;
         }
 

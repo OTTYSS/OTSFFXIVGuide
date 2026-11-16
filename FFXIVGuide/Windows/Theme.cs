@@ -14,13 +14,32 @@ namespace FFXIVGuide.Windows;
 /// <summary>Тема в духе «справочника»: тёмно-синий фон, золотой акцент, карточки.</summary>
 internal static class Theme
 {
-    public static readonly Vector4 Bg = Rgb(0x14, 0x17, 0x22);
-    public static readonly Vector4 PanelBg = Rgb(0x1B, 0x20, 0x2E);
-    public static readonly Vector4 CardBg = Rgb(0x22, 0x28, 0x39);
-    public static readonly Vector4 CardHover = Rgb(0x2B, 0x33, 0x48);
+    /// <summary>Набор цветов темы.</summary>
+    public sealed record Palette(string Name, Vector4 Bg, Vector4 PanelBg, Vector4 CardBg, Vector4 CardHover, Vector4 Border,
+        Vector4 Text, Vector4 TextDim, Vector4 Gray, Vector4 Green, Vector4 Yellow, Vector4 Blue, Vector4 Red);
+
+    public static readonly Palette[] Palettes =
+    {
+        new("Тёмная", Rgb(0x14, 0x17, 0x22), Rgb(0x1B, 0x20, 0x2E), Rgb(0x22, 0x28, 0x39), Rgb(0x2B, 0x33, 0x48), Rgb(0x34, 0x3C, 0x52),
+            Rgb(0xE6, 0xE8, 0xEE), Rgb(0x8E, 0x96, 0xA8), Rgb(0x6E, 0x75, 0x85),
+            Rgb(0x5F, 0xD0, 0x7A), Rgb(0xF0, 0xC8, 0x50), Rgb(0x6F, 0xB4, 0xFF), Rgb(0xF0, 0x6E, 0x64)),
+        new("Пергамент", Rgb(0x1E, 0x19, 0x13), Rgb(0x29, 0x22, 0x1A), Rgb(0x34, 0x2B, 0x20), Rgb(0x40, 0x35, 0x28), Rgb(0x56, 0x48, 0x3A),
+            Rgb(0xF0, 0xE6, 0xD2), Rgb(0xB5, 0xA6, 0x8C), Rgb(0x87, 0x7A, 0x6A),
+            Rgb(0x8C, 0xC8, 0x7C), Rgb(0xE8, 0xC1, 0x5A), Rgb(0x86, 0xB4, 0xD6), Rgb(0xE0, 0x7A, 0x64)),
+        new("Контрастная", Rgb(0x00, 0x00, 0x00), Rgb(0x0B, 0x0B, 0x0B), Rgb(0x18, 0x18, 0x18), Rgb(0x2A, 0x2A, 0x2A), Rgb(0x70, 0x70, 0x70),
+            Rgb(0xFF, 0xFF, 0xFF), Rgb(0xD2, 0xD2, 0xD2), Rgb(0xA8, 0xA8, 0xA8),
+            Rgb(0x4C, 0xFF, 0x7A), Rgb(0xFF, 0xE1, 0x4D), Rgb(0x5C, 0xC8, 0xFF), Rgb(0xFF, 0x5C, 0x5C)),
+    };
+
+    private static Palette P => Palettes[Math.Clamp(Plugin.Config?.ColorTheme ?? 0, 0, Palettes.Length - 1)];
+
+    public static Vector4 Bg => P.Bg;
+    public static Vector4 PanelBg => P.PanelBg;
+    public static Vector4 CardBg => P.CardBg;
+    public static Vector4 CardHover => P.CardHover;
     /// <summary>Фон выбранной карточки — оттенок акцентного цвета.</summary>
     public static Vector4 CardSelected => Mix(CardBg, Gold, 0.18f);
-    public static readonly Vector4 Border = Rgb(0x34, 0x3C, 0x52);
+    public static Vector4 Border => P.Border;
     // Акцентный цвет темы выбирается в настройках (по умолчанию золотой)
     public static readonly (string Name, Vector4 Color)[] Accents =
     {
@@ -32,17 +51,22 @@ internal static class Theme
         ("Красный", Rgb(0xF0, 0x7A, 0x6A)),
     };
 
-    public static Vector4 Gold => Accents[Math.Clamp(Plugin.Config.AccentColor, 0, Accents.Length - 1)].Color;
-    public static Vector4 GoldDim => Mix(Gold, Rgb(0x14, 0x17, 0x22), 0.35f);
+    public static Vector4 Gold => Accents[Math.Clamp(Plugin.Config?.AccentColor ?? 0, 0, Accents.Length - 1)].Color;
+    public static Vector4 GoldDim => Mix(Gold, Bg, 0.35f);
 
     public static Vector4 Mix(Vector4 a, Vector4 b, float t) => a + (b - a) * t;
-    public static readonly Vector4 Text = Rgb(0xE6, 0xE8, 0xEE);
-    public static readonly Vector4 TextDim = Rgb(0x8E, 0x96, 0xA8);
-    public static readonly Vector4 Green = Rgb(0x5F, 0xD0, 0x7A);
-    public static readonly Vector4 Yellow = Rgb(0xF0, 0xC8, 0x50);
-    public static readonly Vector4 Blue = Rgb(0x6F, 0xB4, 0xFF);
-    public static readonly Vector4 Red = Rgb(0xF0, 0x6E, 0x64);
-    public static readonly Vector4 Gray = Rgb(0x6E, 0x75, 0x85);
+    public static Vector4 Text => P.Text;
+    public static Vector4 TextDim => P.TextDim;
+    public static Vector4 Green => P.Green;
+    public static Vector4 Yellow => P.Yellow;
+    public static Vector4 Blue => P.Blue;
+    public static Vector4 Red => P.Red;
+    public static Vector4 Gray => P.Gray;
+
+    public static readonly string[] DensityNames = { "Компактно", "Обычно", "Просторно" };
+
+    /// <summary>Множитель отступов по настройке плотности.</summary>
+    public static float D => (Plugin.Config?.Density ?? 1) switch { 0 => 0.6f, 2 => 1.4f, _ => 1f };
 
     private const int ColorCount = 22;
     private const int VarCount = 9;
@@ -156,8 +180,8 @@ internal static class Theme
         ImGui.PushStyleVar(ImGuiStyleVar.GrabRounding, 6f * S);
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, 6f * S);
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 10f * S);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10, 6) * S);
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8, 6) * S);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10, 6) * S * D);
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8, 6) * S * D);
     }
 
     public static void Pop()
@@ -475,7 +499,19 @@ internal static class Theme
     // ───────────── Пустое состояние ─────────────
 
     /// <summary>Крупная иконка и текст по центру вместо серой строки.</summary>
-    public static void EmptyState(FontAwesomeIcon icon, string title, string text)
+    public static void EmptyState(FontAwesomeIcon icon, string title, string text) => EmptyState(icon, title, text, null, null);
+
+    /// <summary>Пустое состояние «нужна офлайн-база» с кнопкой «Скачать» и прогрессом загрузки.</summary>
+    public static void NeedOfflineDb(string what) =>
+        EmptyState(FontAwesomeIcon.Database, "Нужна офлайн-база", what,
+            FFXIVGuide.Data.OfflineDb.Instance.Busy ? null : "Скачать базу", () => FFXIVGuide.Data.OfflineDb.Instance.Update(false));
+
+    /// <summary>Пустое состояние «зайди персонажем».</summary>
+    public static void NeedLogin(string what) =>
+        EmptyState(FontAwesomeIcon.UserCircle, "Персонаж не загружен", what);
+
+    /// <summary>Крупная иконка, текст и кнопка с действием: что сделать, чтобы здесь что-то появилось.</summary>
+    public static void EmptyState(FontAwesomeIcon icon, string title, string text, string? button, Action? onClick)
     {
         Panel("empty" + title, () =>
         {
@@ -497,6 +533,15 @@ internal static class Theme
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Math.Max(0, (w - ts.X) / 2));
             ImGui.TextColored(Text, title);
             ImGui.TextColored(TextDim, text);
+            if (title == "Нужна офлайн-база" && FFXIVGuide.Data.OfflineDb.Instance.Busy)
+                Progress(FFXIVGuide.Data.OfflineDb.Instance.Status, (int)(FFXIVGuide.Data.OfflineDb.Instance.ProgressValue * 100), 100, Gold);
+            if (button is not null && onClick is not null)
+            {
+                ImGui.Dummy(new Vector2(0, 4 * S));
+                var bs = ImGui.CalcTextSize(button).X + 60 * S;
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Math.Max(0, (w - bs) / 2));
+                if (IconButton("empty_btn" + title, FontAwesomeIcon.ArrowRight, button)) onClick();
+            }
             ImGui.Dummy(new Vector2(0, 6 * S));
         });
     }
@@ -566,7 +611,7 @@ internal static class Theme
         var dl = ImGui.GetWindowDrawList();
         dl.ChannelsSplit(2);
         dl.ChannelsSetCurrent(1);
-        var pad = 10f * S;
+        var pad = 10f * S * D;
         var start = ImGui.GetCursorScreenPos();
         var width = ImGui.GetContentRegionAvail().X;
         ImGui.SetCursorScreenPos(start + new Vector2(pad));
@@ -600,8 +645,114 @@ internal static class Theme
         dl.AddRect(start, end, U32(Border), 8f * S);
         dl.AddLine(start + new Vector2(10 * S, 1), new Vector2(end.X - 10 * S, start.Y + 1), U32(Alpha(Text, 0.06f)));
         dl.ChannelsMerge();
-        ImGui.SetCursorScreenPos(new Vector2(start.X, end.Y + 6 * S));
+        ImGui.SetCursorScreenPos(new Vector2(start.X, end.Y + 6 * S * D));
         ImGui.Dummy(Vector2.Zero);
+    }
+
+    // ───────────── Клавиатура внутри окна ─────────────
+
+    private static bool escPressed, escConsumed;
+
+    /// <summary>Начало кадра главного окна: нажат ли Esc (и не занят ли он полем ввода).</summary>
+    public static void BeginEsc(bool pressed)
+    {
+        escPressed = pressed;
+        escConsumed = false;
+    }
+
+    /// <summary>Вкладка с открытой карточкой забирает Esc, чтобы закрыть карточку, а не окно.</summary>
+    public static bool ConsumeEsc()
+    {
+        if (!escPressed || escConsumed) return false;
+        escConsumed = true;
+        return true;
+    }
+
+    /// <summary>Esc нажат, но ни одна вкладка его не забрала.</summary>
+    public static bool EscUnhandled => escPressed && !escConsumed;
+
+    /// <summary>Можно ли сейчас листать список клавишами (окно в фокусе и никто не печатает).</summary>
+    private static bool KeysFree =>
+        ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && !ImGui.GetIO().WantTextInput && !ImGui.GetIO().KeyCtrl && !ImGui.GetIO().KeyAlt;
+
+    /// <summary>
+    /// Стрелки ↑/↓ двигают выбор в списке, Enter — «действие». Возвращает true, если нажат Enter.
+    /// index = -1 — ничего не выбрано.
+    /// </summary>
+    public static bool ListKeys(ref int index, int count)
+    {
+        if (count == 0 || !KeysFree) return false;
+        if (ImGui.IsKeyPressed(ImGuiKey.DownArrow)) index = Math.Min(index + 1, count - 1);
+        if (ImGui.IsKeyPressed(ImGuiKey.UpArrow)) index = Math.Max(index - 1, 0);
+        if (ImGui.IsKeyPressed(ImGuiKey.PageDown)) index = Math.Min(index + 10, count - 1);
+        if (ImGui.IsKeyPressed(ImGuiKey.PageUp)) index = Math.Max(index - 10, 0);
+        return index >= 0 && (ImGui.IsKeyPressed(ImGuiKey.Enter, false) || ImGui.IsKeyPressed(ImGuiKey.KeypadEnter, false));
+    }
+
+    /// <summary>Нажата ли клавиша-стрелка (чтобы прокрутить список к выбранной строке).</summary>
+    public static bool ListKeyMoved => KeysFree && (ImGui.IsKeyPressed(ImGuiKey.DownArrow) || ImGui.IsKeyPressed(ImGuiKey.UpArrow)
+        || ImGui.IsKeyPressed(ImGuiKey.PageDown) || ImGui.IsKeyPressed(ImGuiKey.PageUp));
+
+    // ───────────── Шаблон «список + подробности» ─────────────
+
+    /// <summary>
+    /// Единый шаблон страницы: список слева, карточка выбранного справа (с перетаскиваемым разделителем).
+    /// Без выбора список занимает всю ширину. На узком окне карточка открывается вместо списка с кнопкой «назад».
+    /// </summary>
+    public static void MasterDetail(string id, bool hasDetail, Action list, Action detail, Action closeDetail, float listShare = 0.55f)
+    {
+        var avail = ImGui.GetContentRegionAvail();
+        if (hasDetail && ConsumeEsc()) { closeDetail(); hasDetail = false; }
+        if (!hasDetail)
+        {
+            if (ImGui.BeginChild($"##{id}_list", Vector2.Zero)) list();
+            ImGui.EndChild();
+            return;
+        }
+        if (avail.X < 700 * S)
+        {
+            if (IconButton($"{id}_back", FontAwesomeIcon.ArrowLeft, "К списку")) { closeDetail(); return; }
+            if (ImGui.BeginChild($"##{id}_detail", Vector2.Zero)) detail();
+            ImGui.EndChild();
+            return;
+        }
+        var leftW = SplitWidth(id + "split", avail.X, avail.X * listShare);
+        if (ImGui.BeginChild($"##{id}_list", new Vector2(leftW, 0))) list();
+        ImGui.EndChild();
+        ImGui.SameLine();
+        Splitter(id + "split", avail.X, avail.X * listShare);
+        ImGui.SameLine();
+        if (ImGui.BeginChild($"##{id}_detail", Vector2.Zero)) detail();
+        ImGui.EndChild();
+    }
+
+    // ───────────── Заготовки загрузки ─────────────
+
+    /// <summary>Серые полоски с бегущим бликом вместо текста «Загружаю…».</summary>
+    public static void Skeleton(string id, int lines = 4, string? caption = null)
+    {
+        Panel("skel" + id, () =>
+        {
+            var dl = ImGui.GetWindowDrawList();
+            var w = ImGui.GetContentRegionAvail().X;
+            var t = (float)(ImGui.GetTime() % 1.6) / 1.6f;
+            if (caption is not null) ImGui.TextColored(TextDim, caption);
+            for (var i = 0; i < lines; i++)
+            {
+                var pos = ImGui.GetCursorScreenPos();
+                var lw = w * (i % 3 == 2 ? 0.55f : i % 3 == 1 ? 0.8f : 0.95f);
+                var h = 14 * S;
+                dl.AddRectFilled(pos, pos + new Vector2(lw, h), U32(CardBg), 4f * S);
+                // блик бежит слева направо
+                var bx = pos.X + (lw + 120 * S) * t - 120 * S;
+                var x0 = Math.Max(pos.X, bx);
+                var x1 = Math.Min(pos.X + lw, bx + 120 * S);
+                if (x1 > x0)
+                    dl.AddRectFilledMultiColor(new Vector2(x0, pos.Y), new Vector2(x1, pos.Y + h),
+                        U32(Alpha(CardHover, 0f)), U32(Alpha(CardHover, 0.9f)), U32(Alpha(CardHover, 0.9f)), U32(Alpha(CardHover, 0f)));
+                ImGui.Dummy(new Vector2(lw, h + 4 * S));
+            }
+        });
     }
 
     public static void Tooltip(string text)
@@ -695,12 +846,19 @@ internal static class Theme
         return clicked;
     }
 
-    public static void VirtualList(int count, float rowHeight, Action<int> drawRow)
+    public static void VirtualList(int count, float rowHeight, Action<int> drawRow, int scrollTo = -1)
     {
         var spacing = ImGui.GetStyle().ItemSpacing.Y;
         var step = rowHeight + spacing;
         var scroll = ImGui.GetScrollY();
         var visible = ImGui.GetWindowHeight();
+        // Прокрутить к строке, выбранной с клавиатуры
+        if (scrollTo >= 0 && scrollTo < count)
+        {
+            var y = scrollTo * step;
+            if (y < scroll) { ImGui.SetScrollY(y); scroll = y; }
+            else if (y + step > scroll + visible) { ImGui.SetScrollY(y + step - visible); scroll = y + step - visible; }
+        }
         var first = Math.Max(0, (int)(scroll / step) - 1);
         var last = Math.Min(count, first + (int)(visible / step) + 3);
 

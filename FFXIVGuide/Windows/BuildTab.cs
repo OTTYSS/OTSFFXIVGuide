@@ -42,7 +42,7 @@ internal sealed unsafe class BuildTab
         Theme.Header("Материя, еда и зелья", "Что вставлять, есть и пить на текущей профессии");
         if (!PlayerInfo.Ready || Plugin.PlayerState.ClassJob.ValueNullable is not { } job)
         {
-            Theme.Panel("bnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем."));
+            Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры.");
             return;
         }
 

@@ -70,7 +70,7 @@ internal sealed unsafe class HuntingLogTab
     public void Draw()
     {
         Theme.Header("Hunting Log", "Журнал охотника: кого убить, сколько и где — по классам и Grand Company");
-        if (!PlayerInfo.Ready) { Theme.Panel("hlnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
 
         var mgr = MonsterNoteManager.Instance();
         var labels = Logs.Select((l, i) =>

@@ -37,7 +37,7 @@ internal sealed class LevelingTab
 
         if (!PlayerInfo.Ready || Plugin.PlayerState.ClassJob.ValueNullable is not { } job)
         {
-            Theme.Panel("lnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем."));
+            Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры.");
             return;
         }
 

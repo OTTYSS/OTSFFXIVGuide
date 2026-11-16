@@ -108,7 +108,7 @@ internal sealed unsafe class WeeklyTab
     private unsafe void DrawBingo()
     {
         var ps = FFXIVClientStructs.FFXIV.Client.Game.UI.PlayerState.Instance();
-        if (ps == null || !PlayerInfo.Ready) { Theme.Panel("wtnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (ps == null || !PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
         if (!ps->HasWeeklyBingoJournal || ps->IsWeeklyBingoExpired())
         {
             Theme.EmptyState(FontAwesomeIcon.Book, "Журнала нет", "Возьми журнал Wondrous Tails у Khloe Aliapoh в Idyllshire (5.7, 7.0). Он даётся раз в неделю, сброс во вторник.");

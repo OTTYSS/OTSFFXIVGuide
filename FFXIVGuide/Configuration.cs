@@ -84,6 +84,21 @@ public sealed class Configuration : IPluginConfiguration
     // Дневник прогресса: id персонажа -> снимки по дням
     public Dictionary<string, List<FFXIVGuide.Data.DiarySnapshot>> Diary { get; set; } = new();
     public int AccentColor { get; set; } = 0;
+    /// <summary>Цветовая тема: 0 — тёмная, 1 — пергамент (тёплая), 2 — контрастная.</summary>
+    public int ColorTheme { get; set; } = 0;
+    /// <summary>Плотность интерфейса: 0 — компактно, 1 — обычно, 2 — просторно.</summary>
+    public int Density { get; set; } = 1;
+    /// <summary>Последние открытые вкладки (для меню «Недавние»).</summary>
+    public List<int> RecentTabs { get; set; } = new();
+    /// <summary>Вкладки, у которых закрыта подсказка «что тут можно делать».</summary>
+    public HashSet<int> HiddenHints { get; set; } = new();
+    /// <summary>Плитки обзора двойной ширины.</summary>
+    public HashSet<string> WideHomeTiles { get; set; } = new();
+    // Мини-окно как HUD
+    public bool MiniTransparent { get; set; } = false;
+    public bool MiniLocked { get; set; } = false;
+    public bool MiniHideInCombat { get; set; } = false;
+    public bool MiniHideInCutscene { get; set; } = true;
     public float UiScale { get; set; } = 1f;
     /// <summary>Размер картинок в списках коллекций: 0 мелкие, 1 средние, 2 крупные, 3 плитки.</summary>
     public int PreviewSize { get; set; } = 1;

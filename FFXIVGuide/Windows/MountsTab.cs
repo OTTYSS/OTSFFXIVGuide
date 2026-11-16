@@ -131,7 +131,7 @@ internal sealed class MountsTab
             try { Build(); }
             catch (Exception e) { Plugin.Log.Warning(e, "Маунты: ошибка разбора"); rows = new(); }
         }
-        if (!PlayerInfo.Ready) { Theme.Panel("mtnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем, чтобы увидеть свои маунты.")); return; }
+        if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем, чтобы увидеть свои маунты."); return; }
 
         var have = rows!.Count(r => Owned(r.Id));
         Theme.Panel("mtsum", () =>
@@ -174,6 +174,13 @@ internal sealed class MountsTab
         var list = q.ToList();
         ImGui.TextColored(Theme.TextDim, $"Показано: {list.Count}");
 
+        // ↑/↓ — листать, Esc — закрыть карточку
+        var idx = list.FindIndex(r => r.Id == selected);
+        Theme.ListKeys(ref idx, list.Count);
+        if (idx >= 0) selected = list[idx].Id;
+        var scrollTo = Theme.ListKeyMoved ? idx : -1;
+        if (selected != 0 && Theme.ConsumeEsc()) selected = 0;
+
         var avail = ImGui.GetContentRegionAvail();
         var rowH = Theme.PreviewRowHeight;
         if (ImGui.BeginChild("##mtlist", new Vector2(Theme.SplitWidth("mounts", avail.X, 0.5f), 0)))
@@ -189,7 +196,7 @@ internal sealed class MountsTab
                 var sub = SourceText(r.Sources) + (r.Seats > 1 ? $" · мест: {r.Seats}" : "");
                 if (Theme.Card($"##mt{r.Id}", r.Icon, NameTranslations.Show(r.Name), sub, own ? "есть" : null, Theme.Green, selected == r.Id, rowH))
                     selected = r.Id;
-            });
+            }, scrollTo);
         }
         ImGui.EndChild();
         Theme.Splitter("mounts", avail.X, 0.5f);

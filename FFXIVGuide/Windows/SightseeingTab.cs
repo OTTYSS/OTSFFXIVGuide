@@ -60,7 +60,7 @@ internal sealed unsafe class SightseeingTab
             try { Build(); }
             catch (Exception e) { Plugin.Log.Warning(e, "Виды: ошибка разбора"); vistas = new(); }
         }
-        if (!PlayerInfo.Ready) { Theme.Panel("ssnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
 
         var done = vistas!.Count(Done);
         var (eh, em) = EorzeaWeather.EorzeaTime(EorzeaWeather.Now);

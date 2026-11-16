@@ -78,7 +78,7 @@ internal sealed class GearTab
 
         if (!PlayerInfo.Ready || Plugin.PlayerState.ClassJob.ValueNullable is not { } job)
         {
-            Theme.Panel("gnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем, чтобы подобрать экипировку под текущую профессию."));
+            Theme.NeedLogin("Зайди в игру персонажем, чтобы подобрать экипировку под текущую профессию.");
             return;
         }
 

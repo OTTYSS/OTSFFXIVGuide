@@ -18,7 +18,7 @@ internal sealed unsafe class TribesTab
     public void Draw()
     {
         Theme.Header("Племена", "Ранг и репутация у каждого племени, сколько квестов можно взять сегодня");
-        if (!PlayerInfo.Ready) { Theme.Panel("tbnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
 
         var ps = PlayerState.Instance();
         var qm = QuestManager.Instance();

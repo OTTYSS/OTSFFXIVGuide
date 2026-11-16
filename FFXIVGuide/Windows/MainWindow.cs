@@ -142,6 +142,9 @@ public sealed class MainWindow : Window
         };
         Size = new Vector2(1060, 680);
         SizeCondition = ImGuiCond.FirstUseEver;
+        // Esc обрабатываем сами: сначала закрывает карточку во вкладке, и только потом — окно
+        RespectCloseHotkey = false;
+        palette = new CommandPalette(Commands, q => OpenSearch(q));
 
         quests = new QuestsTab(data);
         duties = new DutiesTab(data, quests, Go);
@@ -292,6 +295,15 @@ public sealed class MainWindow : Window
     private readonly SideStoryTab sideStories;
     private string headerSearch = "";
     private bool focusHeaderSearch;
+    private readonly CommandPalette palette;
+
+    // ───────────── История переходов (вкладка + открытая карточка) ─────────────
+    private readonly record struct NavState(MainTab Tab, WikiLink? Card);
+    private readonly List<NavState> history = new();
+    private readonly List<NavState> future = new();
+    private NavState? lastState;
+    private bool replaying;
+
 
     /// <summary>Своя шапка: логотип, поиск по всему справочнику и кнопки окна.</summary>
     private void DrawTitleBar()
@@ -317,12 +329,12 @@ public sealed class MainWindow : Window
 
         // Назад / вперёд по вики и звёздочка «в избранное» для текущей карточки
         ImGui.SetCursorScreenPos(start + new Vector2(titleW, (h - 26 * S) / 2));
-        ImGui.BeginDisabled(!WikiNav.CanBack);
-        if (TitleButton("back", FontAwesomeIcon.ArrowLeft, "Назад по вики")) WikiNav.Back();
+        ImGui.BeginDisabled(history.Count == 0);
+        if (TitleButton("back", FontAwesomeIcon.ArrowLeft, history.Count > 0 ? $"Назад: {StateName(history[^1])} (Alt+←)" : "Назад")) GoBack();
         ImGui.EndDisabled();
         ImGui.SameLine(0, 2 * S);
-        ImGui.BeginDisabled(!WikiNav.CanForward);
-        if (TitleButton("fwd", FontAwesomeIcon.ArrowRight, "Вперёд по вики")) WikiNav.Forward();
+        ImGui.BeginDisabled(future.Count == 0);
+        if (TitleButton("fwd", FontAwesomeIcon.ArrowRight, future.Count > 0 ? $"Вперёд: {StateName(future[^1])} (Alt+→)" : "Вперёд")) GoForward();
         ImGui.EndDisabled();
         ImGui.SameLine(0, 2 * S);
         var cur = WikiNav.Current;
@@ -335,7 +347,7 @@ public sealed class MainWindow : Window
         titleW += 3 * 28 * S + 14 * S;
 
         // Поиск в шапке: печатаешь — сразу открывается раздел «Поиск»
-        var buttonsW = 3 * 30 * S + 10 * S;
+        var buttonsW = 4 * 30 * S + 10 * S;
         var searchW = Math.Min(w - titleW - buttonsW, 520 * S);
         ImGui.SetCursorScreenPos(start + new Vector2(titleW, (h - ImGui.GetFrameHeight()) / 2));
         ImGui.PushFont(UiBuilder.IconFont);
@@ -357,6 +369,8 @@ public sealed class MainWindow : Window
         // Кнопки справа: мини-окно, настройки, закрыть
         var bx = start.X + w - buttonsW + 10 * S;
         ImGui.SetCursorScreenPos(new Vector2(bx, start.Y + (h - 26 * S) / 2));
+        if (TitleButton("palette", FontAwesomeIcon.Bolt, "Быстрый переход (Ctrl+K)")) palette.Open();
+        ImGui.SameLine(0, 4 * S);
         if (TitleButton("mini", FontAwesomeIcon.Compass, "Мини-окно")) Plugin.SetMiniWindow(!Plugin.Config.MiniWindow);
         ImGui.SameLine(0, 4 * S);
         if (TitleButton("cfg", FontAwesomeIcon.Cog, "Настройки")) current = MainTab.Settings;
@@ -408,6 +422,12 @@ public sealed class MainWindow : Window
             quests.EndFrame();
         }
 
+        var io = ImGui.GetIO();
+        // Esc в открытом выпадающем списке или меню закрывает только его
+        Theme.BeginEsc(ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && !palette.IsOpen && !io.WantTextInput
+                       && !ImGui.IsPopupOpen("", ImGuiPopupFlags.AnyPopupId | ImGuiPopupFlags.AnyPopupLevel)
+                       && ImGui.IsKeyPressed(ImGuiKey.Escape, false));
+
         DrawTitleBar();
 
         DrawSidebar();
@@ -426,16 +446,138 @@ public sealed class MainWindow : Window
             else
             {
                 DrawPageTabs();
+                TabHints.Draw(current);
                 DrawPageSafe();
             }
         }
         ImGui.EndChild();
+
+        TrackHistory();
+        palette.Draw();
+        // Esc, который не забрала ни одна вкладка (не было открытой карточки), закрывает окно, как раньше
+        if (Theme.EscUnhandled) IsOpen = false;
+    }
+
+    // ───────────── История переходов ─────────────
+
+    private static MainTab? CardTab(WikiKind k) => k switch
+    {
+        WikiKind.Item => MainTab.Items,
+        WikiKind.Mob => MainTab.Bestiary,
+        WikiKind.Duty => MainTab.Duties,
+        WikiKind.Zone or WikiKind.Npc => MainTab.Wiki,
+        WikiKind.Quest => MainTab.Quests,
+        _ => null,
+    };
+
+    private NavState Snapshot()
+    {
+        var card = WikiNav.Current;
+        return new NavState(current, card is not null && CardTab(card.Kind) == current ? card : null);
+    }
+
+    private static bool Same(NavState a, NavState b) => a.Tab == b.Tab && a.Card?.Key == b.Card?.Key;
+
+    private static string StateName(NavState s) =>
+        s.Card?.Name ?? AllPages.FirstOrDefault(p => p.Tab == s.Tab).Name ?? s.Tab.ToString();
+
+    private void TrackHistory()
+    {
+        var st = Snapshot();
+        if (lastState is not { } last) { lastState = st; return; }
+        if (Same(st, last)) return;
+        if (!replaying)
+        {
+            history.Add(last);
+            if (history.Count > 100) history.RemoveAt(0);
+            future.Clear();
+        }
+        replaying = false;
+        lastState = st;
+        if (st.Tab != last.Tab) RememberRecent(st.Tab);
+    }
+
+    private void Restore(NavState s)
+    {
+        replaying = true;
+        current = s.Tab;
+        if (s.Card is not null && s.Card.Key != WikiNav.Current?.Key) WikiNav.Show(s.Card);
+        current = s.Tab;
+    }
+
+    private void GoBack()
+    {
+        if (history.Count == 0) return;
+        var to = history[^1];
+        history.RemoveAt(history.Count - 1);
+        if (lastState is { } cur) future.Add(cur);
+        Restore(to);
+    }
+
+    private void GoForward()
+    {
+        if (future.Count == 0) return;
+        var to = future[^1];
+        future.RemoveAt(future.Count - 1);
+        if (lastState is { } cur) history.Add(cur);
+        Restore(to);
+    }
+
+    private static void RememberRecent(MainTab tab)
+    {
+        if (tab is MainTab.Home or MainTab.Settings or MainTab.Search) return;
+        var list = Plugin.Config.RecentTabs;
+        list.Remove((int)tab);
+        list.Insert(0, (int)tab);
+        while (list.Count > 6) list.RemoveAt(list.Count - 1);
+        Plugin.Config.Save();
+    }
+
+    // ───────────── Командная палитра ─────────────
+
+    private IEnumerable<CommandPalette.Command> Commands()
+    {
+        foreach (var p in AllPages)
+        {
+            var tab = p.Tab;
+            yield return new(p.Name, p.Hub, p.Icon, () => current = tab, tab.ToString());
+        }
+        foreach (var l in WikiNav.Recent.Take(10))
+        {
+            var link = l;
+            yield return new(link.Name, "Недавняя карточка · " + link.KindName, link.Icon, () => WikiNav.Open(link));
+        }
+        foreach (var l in WikiNav.Favorites.Take(20))
+        {
+            var link = l;
+            yield return new(link.Name, "Избранное · " + link.KindName, FontAwesomeIcon.Star, () => WikiNav.Open(link));
+        }
+        var cfg = Plugin.Config;
+        yield return new(cfg.MiniWindow ? "Скрыть мини-окно" : "Показать мини-окно", "Действие", FontAwesomeIcon.Compass, () => Plugin.SetMiniWindow(!cfg.MiniWindow), "mini hud");
+        yield return new(cfg.CompactSidebar ? "Развернуть меню" : "Свернуть меню", "Действие", FontAwesomeIcon.Bars, () => { cfg.CompactSidebar = !cfg.CompactSidebar; cfg.Save(); });
+        for (var i = 0; i < Theme.Palettes.Length; i++)
+        {
+            var n = i;
+            yield return new($"Тема: {Theme.Palettes[i].Name}", "Внешний вид", FontAwesomeIcon.Palette, () => { cfg.ColorTheme = n; cfg.Save(); }, "цвет оформление");
+        }
+        for (var i = 0; i < Theme.DensityNames.Length; i++)
+        {
+            var n = i;
+            yield return new($"Плотность: {Theme.DensityNames[i]}", "Внешний вид", FontAwesomeIcon.Compress, () => { cfg.Density = n; cfg.Save(); }, "отступы размер");
+        }
+        for (var i = 0; i < Theme.Accents.Length; i++)
+        {
+            var n = i;
+            yield return new($"Акцент: {Theme.Accents[i].Name}", "Внешний вид", FontAwesomeIcon.Circle, () => { cfg.AccentColor = n; cfg.Save(); }, "цвет");
+        }
+        yield return new("Обновить офлайн-базу", "Действие", FontAwesomeIcon.Download, () => OfflineDb.Instance.Update(false), "скачать база данных");
+        yield return new("Показать все подсказки снова", "Действие", FontAwesomeIcon.Lightbulb, () => { cfg.HiddenHints.Clear(); cfg.Save(); });
     }
 
     private void DrawSidebar()
     {
         var S = Theme.S;
-        var compact = Plugin.Config.CompactSidebar || ImGui.GetWindowWidth() < 880 * Theme.S;
+        var compact = SidebarCompact;
         if (!ImGui.BeginChild("##sidebar", new Vector2((compact ? 52 : 210) * S, 0), false, ImGuiWindowFlags.None))
         {
             ImGui.EndChild();
@@ -476,7 +618,22 @@ public sealed class MainWindow : Window
         {
             NavGroup("Закреплённые", compact);
             foreach (var p in pinned)
+            {
                 if (NavButton($"pin{p.Tab}", p.Icon, p.Name, current == p.Tab, compact)) current = p.Tab;
+                PinMenu(p.Tab);
+            }
+            ImGui.Dummy(new Vector2(0, 4 * S));
+            if (!compact) NavGroup("Разделы", compact);
+        }
+
+        // Недавние вкладки (кроме текущей и закреплённых)
+        var recent = Plugin.Config.RecentTabs.Where(t => t != (int)current && !Plugin.Config.PinnedTabs.Contains(t))
+            .Select(t => AllPages.FirstOrDefault(p => (int)p.Tab == t)).Where(p => p.Name is not null).Take(compact ? 3 : 4).ToList();
+        if (recent.Count > 0)
+        {
+            NavGroup("Недавние", compact);
+            foreach (var p in recent)
+                if (NavButton($"rec{p.Tab}", p.Icon, p.Name, false, compact, sub: !compact)) current = p.Tab;
             ImGui.Dummy(new Vector2(0, 4 * S));
             if (!compact) NavGroup("Разделы", compact);
         }
@@ -485,8 +642,27 @@ public sealed class MainWindow : Window
         for (var i = 0; i < Hubs.Length; i++)
         {
             var h = Hubs[i];
-            if (NavButton($"hub{i}", h.Icon, h.Name, i == activeHub, compact))
-                current = lastPage.TryGetValue(i, out var last) ? last : h.Pages[0].Tab;
+            var multi = h.Pages.Length > 1 && !compact;
+            var open = multi && i == activeHub && !collapsedActive.Contains(i);
+            if (NavButton($"hub{i}", h.Icon, h.Name, i == activeHub && (compact || !multi), compact, chevron: multi ? open : null))
+            {
+                if (multi && i == activeHub)
+                {
+                    // повторный клик по открытому разделу — свернуть/развернуть список вкладок
+                    if (!collapsedActive.Remove(i)) collapsedActive.Add(i);
+                }
+                else
+                {
+                    current = lastPage.TryGetValue(i, out var last) ? last : h.Pages[0].Tab;
+                    collapsedActive.Remove(i);
+                }
+            }
+            if (!open) continue;
+            foreach (var pg in h.Pages)
+            {
+                if (NavButton($"pg{pg.Tab}", pg.Icon, pg.Name, current == pg.Tab, false, sub: true)) current = pg.Tab;
+                PinMenu(pg.Tab);
+            }
         }
 
         // Переключатель компактного меню
@@ -499,7 +675,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.19.1");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.20");
         }
 
         ImGui.EndChild();
@@ -627,12 +803,31 @@ public sealed class MainWindow : Window
             ImGui.SetTooltip("Развернуть меню");
     }
 
-    private static bool NavButton(string id, FontAwesomeIcon icon, string name, bool active, bool compact)
+    private bool SidebarCompact => Plugin.Config.CompactSidebar || ImGui.GetWindowWidth() < 880 * Theme.S;
+
+    // Активный раздел, который пользователь свернул повторным кликом
+    private readonly HashSet<int> collapsedActive = new();
+
+    /// <summary>Правый клик по вкладке в меню — закрепить или открепить.</summary>
+    private static void PinMenu(MainTab tab)
+    {
+        if (!ImGui.BeginPopupContextItem($"##pinm{tab}")) return;
+        var pinnedNow = Plugin.Config.PinnedTabs.Contains((int)tab);
+        if (ImGui.Selectable(pinnedNow ? "Открепить" : "Закрепить наверху меню"))
+        {
+            if (pinnedNow) Plugin.Config.PinnedTabs.Remove((int)tab); else Plugin.Config.PinnedTabs.Add((int)tab);
+            Plugin.Config.Save();
+        }
+        ImGui.EndPopup();
+    }
+
+    private static bool NavButton(string id, FontAwesomeIcon icon, string name, bool active, bool compact, bool sub = false, bool? chevron = null)
     {
         var S = Theme.S;
-        ImGui.SetCursorPosX(8 * S);
+        var indent = sub ? 14 * S : 0;
+        ImGui.SetCursorPosX(8 * S + indent);
         var pos = ImGui.GetCursorScreenPos();
-        var size = new Vector2(ImGui.GetWindowWidth() - 16 * S, 33 * S);
+        var size = new Vector2(ImGui.GetWindowWidth() - 16 * S - indent, (sub ? 27 : 33) * S * (0.85f + 0.15f * Theme.D));
         var clicked = ImGui.InvisibleButton($"##nb{id}", size);
         var hovered = ImGui.IsItemHovered();
         var dl = ImGui.GetWindowDrawList();
@@ -650,9 +845,21 @@ public sealed class MainWindow : Window
         else
         {
             var ts = ImGui.CalcTextSize(name);
-            dl.AddText(pos + new Vector2(42 * S, (size.Y - ts.Y) / 2), Theme.U32(color), name);
+            var clip = new Vector4(pos.X, pos.Y, pos.X + size.X - (chevron is null ? 6 : 24) * S, pos.Y + size.Y);
+            dl.AddText(ImGui.GetFont(), ImGui.GetFontSize(), pos + new Vector2(42 * S, (size.Y - ts.Y) / 2), Theme.U32(color), name, 0f, ref clip);
+            if (ts.X > size.X - 60 * S && hovered) ImGui.SetTooltip(name);
+            if (chevron is { } open)
+            {
+                ImGui.PushFont(UiBuilder.IconFont);
+                var ch = (open ? FontAwesomeIcon.ChevronDown : FontAwesomeIcon.ChevronRight).ToIconString();
+                var cs = ImGui.CalcTextSize(ch);
+                ImGui.SetWindowFontScale(0.75f);
+                dl.AddText(ImGui.GetFont(), ImGui.GetFontSize(), pos + new Vector2(size.X - 18 * S, (size.Y - cs.Y * 0.75f) / 2), Theme.U32(Theme.Gray), ch);
+                ImGui.SetWindowFontScale(1f);
+                ImGui.PopFont();
+            }
         }
-        ImGui.Dummy(new Vector2(0, 2 * S));
+        ImGui.Dummy(new Vector2(0, (sub ? 1 : 2) * S));
         return clicked;
     }
 
@@ -663,7 +870,7 @@ public sealed class MainWindow : Window
         if (hi < 0) return;
         lastPage[hi] = current;
         var hub = Hubs[hi];
-        if (hub.Pages.Length < 2) return;
+        if (hub.Pages.Length < 2 || !SidebarCompact) return;
         var S = Theme.S;
         var dl = ImGui.GetWindowDrawList();
         var start = ImGui.GetCursorScreenPos();
@@ -841,8 +1048,12 @@ public sealed class MainWindow : Window
         if (!ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows)) return;
         var io = ImGui.GetIO();
         if (io.KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.F)) focusHeaderSearch = true;
-        if (io.KeyAlt && ImGui.IsKeyPressed(ImGuiKey.LeftArrow)) WikiNav.Back();
-        if (io.KeyAlt && ImGui.IsKeyPressed(ImGuiKey.RightArrow)) WikiNav.Forward();
+        if (io.KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.K)) palette.Open();
+        if (io.KeyAlt && ImGui.IsKeyPressed(ImGuiKey.LeftArrow)) GoBack();
+        if (io.KeyAlt && ImGui.IsKeyPressed(ImGuiKey.RightArrow)) GoForward();
+        // Боковые кнопки мыши
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Middle + 1)) GoBack();
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Middle + 2)) GoForward();
         if (io.KeyCtrl && !io.WantTextInput)
         {
             var keys = new[] { ImGuiKey.Key1, ImGuiKey.Key2, ImGuiKey.Key3, ImGuiKey.Key4, ImGuiKey.Key5, ImGuiKey.Key6, ImGuiKey.Key7, ImGuiKey.Key8, ImGuiKey.Key9, ImGuiKey.Key0 };
@@ -905,7 +1116,7 @@ public sealed class MainWindow : Window
         });
         Theme.Panel("setup5", () =>
         {
-            ImGui.TextColored(Theme.TextDim, "Горячие клавиши в окне: Ctrl+F — поиск, Alt+←/→ — назад/вперёд, Ctrl+1…0 — разделы. Окно: Ctrl+Shift+G.");
+            ImGui.TextColored(Theme.TextDim, "Горячие клавиши в окне: Ctrl+K — быстрый переход, Ctrl+F — поиск, Alt+←/→ — назад/вперёд, Ctrl+1…0 — разделы, Esc — закрыть карточку. Окно: Ctrl+Shift+G.");
             if (Theme.IconButton("setdone", FontAwesomeIcon.Check, "Готово"))
             {
                 cfg.SetupDone = true;

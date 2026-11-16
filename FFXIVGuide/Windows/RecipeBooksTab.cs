@@ -45,7 +45,7 @@ internal sealed unsafe class RecipeBooksTab
             catch (Exception e) { Plugin.Log.Warning(e, "Книги: ошибка разбора"); }
         }
         var ps = PlayerState.Instance();
-        if (!PlayerInfo.Ready || ps == null) { Theme.Panel("rbnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready || ps == null) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
 
         bool Has(Book b) => ps->IsSecretRecipeBookUnlocked(b.Id);
         var done = books.Count(Has);

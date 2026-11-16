@@ -288,7 +288,7 @@ internal sealed class CollectionsTab
 
         if (!PlayerInfo.Ready)
         {
-            Theme.Panel("cnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем, чтобы увидеть коллекции."));
+            Theme.NeedLogin("Зайди в игру персонажем, чтобы увидеть коллекции.");
             return;
         }
 

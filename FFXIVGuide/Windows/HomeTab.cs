@@ -39,12 +39,20 @@ internal sealed class HomeTab
     public void Draw()
     {
         Theme.Header("Обзор", "Главное о персонаже и что сделать дальше. Нажми на плитку или кольцо — откроется раздел.");
-        if (Theme.IconButton("hcfg", FontAwesomeIcon.SlidersH, "Настроить плитки")) ImGui.OpenPopup("##hometiles");
-        DrawTilePicker();
+        if (Theme.IconButton("hcfg", editTiles ? FontAwesomeIcon.Check : FontAwesomeIcon.SlidersH, editTiles ? "Готово" : "Изменить плитки"))
+        {
+            editTiles = !editTiles;
+            dragId = null;
+        }
+        if (editTiles)
+        {
+            ImGui.SameLine();
+            ImGui.TextColored(Theme.TextDim, "Тяни плитку за значок со стрелками, чтобы переставить. Кнопки справа на плитке: шире или уже и убрать.");
+        }
 
         if (!PlayerInfo.Ready)
         {
-            Theme.Panel("hnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем — здесь появится прогресс и следующие шаги."));
+            Theme.NeedLogin("Зайди в игру персонажем — здесь появится прогресс и следующие шаги.");
             return;
         }
 
@@ -60,9 +68,8 @@ internal sealed class HomeTab
             return;
         }
 
-        // ── Плитки: на широком окне 2–3 в ряд, на узком — столбиком
-        var tiles = Plugin.Config.HomeTiles.Select(id => TileById(id)).Where(t => t is not null).Select(t => t!).ToArray();
-        Theme.Grid("htiles", tiles.Length, 300f, i => tiles[i]());
+        // ── Плитки: на широком окне 2–3 в ряд, на узком — столбиком; широкие занимают две колонки
+        DrawTiles();
 
         // ── Списки «что сделать» в две колонки
         var rowH = 44 * Theme.S;
@@ -108,21 +115,170 @@ internal sealed class HomeTab
     /// <summary>Плитка: иконка, заголовок, кнопка-стрелка «перейти» и содержимое.</summary>
     private void Tile(string id, FontAwesomeIcon icon, string title, MainTab target, System.Action content)
     {
+        var cfgId = curTile;
         Theme.Panel(id, () =>
         {
+            if (editTiles && cfgId is not null)
+            {
+                // Ручка для перетаскивания
+                ImGui.PushFont(UiBuilder.IconFont);
+                var grip = FontAwesomeIcon.ArrowsAlt.ToIconString();
+                var gs = ImGui.CalcTextSize(grip);
+                ImGui.PopFont();
+                var gp = ImGui.GetCursorScreenPos();
+                ImGui.InvisibleButton($"##grip{cfgId}", gs + new Vector2(6 * Theme.S, 0));
+                if (ImGui.IsItemActive() && ImGui.IsMouseDragging(ImGuiMouseButton.Left, 3f)) dragId = cfgId;
+                if (ImGui.IsItemHovered()) ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
+                ImGui.PushFont(UiBuilder.IconFont);
+                ImGui.GetWindowDrawList().AddText(gp, Theme.U32(dragId == cfgId ? Theme.Gold : Theme.TextDim), grip);
+                ImGui.PopFont();
+                ImGui.SameLine();
+            }
             Theme.FaIcon(icon, Theme.Gold);
             ImGui.SameLine();
             ImGui.TextColored(Theme.GoldDim, title.ToUpperInvariant());
             ImGui.SameLine();
             ImGui.PushFont(UiBuilder.IconFont);
-            var bw = ImGui.CalcTextSize(FontAwesomeIcon.ArrowRight.ToIconString()).X + ImGui.GetStyle().FramePadding.X * 2;
-            ImGui.SetCursorScreenPos(new Vector2(Theme.PanelRight - bw, ImGui.GetCursorScreenPos().Y));
-            var clicked = ImGui.SmallButton($"{FontAwesomeIcon.ArrowRight.ToIconString()}##go{id}");
-            ImGui.PopFont();
-            if (clicked) go(target);
-            Theme.Tooltip("Открыть раздел");
+            var one = ImGui.CalcTextSize(FontAwesomeIcon.ArrowRight.ToIconString()).X + ImGui.GetStyle().FramePadding.X * 2;
+            if (editTiles && cfgId is not null)
+            {
+                var wide = Plugin.Config.WideHomeTiles.Contains(cfgId);
+                ImGui.SetCursorScreenPos(new Vector2(Theme.PanelRight - one * 2 - 4 * Theme.S, ImGui.GetCursorScreenPos().Y));
+                var resize = ImGui.SmallButton($"{(wide ? FontAwesomeIcon.Compress : FontAwesomeIcon.Expand).ToIconString()}##wide{cfgId}");
+                var resizeHover = ImGui.IsItemHovered();
+                ImGui.SameLine(0, 4 * Theme.S);
+                var remove = ImGui.SmallButton($"{FontAwesomeIcon.Times.ToIconString()}##rm{cfgId}");
+                var removeHover = ImGui.IsItemHovered();
+                ImGui.PopFont();
+                if (resizeHover) ImGui.SetTooltip(wide ? "Сделать обычной ширины" : "Сделать широкой (на две колонки)");
+                if (removeHover) ImGui.SetTooltip("Убрать плитку");
+                if (resize)
+                {
+                    if (!Plugin.Config.WideHomeTiles.Remove(cfgId)) Plugin.Config.WideHomeTiles.Add(cfgId);
+                    Plugin.Config.Save();
+                }
+                if (remove)
+                {
+                    Plugin.Config.HomeTiles.Remove(cfgId);
+                    Plugin.Config.Save();
+                }
+            }
+            else
+            {
+                ImGui.SetCursorScreenPos(new Vector2(Theme.PanelRight - one, ImGui.GetCursorScreenPos().Y));
+                var clicked = ImGui.SmallButton($"{FontAwesomeIcon.ArrowRight.ToIconString()}##go{id}");
+                ImGui.PopFont();
+                if (clicked) go(target);
+                Theme.Tooltip("Открыть раздел");
+            }
             ImGui.Dummy(new Vector2(0, 2 * Theme.S));
             content();
+        });
+    }
+
+    // ───────────── Раскладка плиток и редактирование мышкой ─────────────
+
+    private bool editTiles;
+    private string? dragId;
+    private string? curTile;
+    private readonly Dictionary<string, (Vector2 Min, Vector2 Max)> tileRects = new();
+
+    private void DrawTiles()
+    {
+        var S = Theme.S;
+        var ids = Plugin.Config.HomeTiles.Where(id => TileById(id) is not null).ToList();
+        var avail = ImGui.GetContentRegionAvail().X;
+        var cols = Math.Clamp((int)(avail / (300f * S)), 1, 3);
+
+        // Ряды: широкая плитка занимает 2 колонки (если колонок хватает)
+        var items = ids.Select(id => (Id: id, Span: cols > 1 && Plugin.Config.WideHomeTiles.Contains(id) ? 2 : 1)).ToList();
+        if (editTiles && AllTiles.Any(t => !ids.Contains(t.Id))) items.Add(("+add", 1));
+        var rowsOf = new List<List<(string Id, int Span)>>();
+        var row = new List<(string Id, int Span)>();
+        var used = 0;
+        foreach (var it in items)
+        {
+            if (used + it.Span > cols && row.Count > 0) { rowsOf.Add(row); row = new(); used = 0; }
+            row.Add(it);
+            used += it.Span;
+        }
+        if (row.Count > 0) rowsOf.Add(row);
+
+        tileRects.Clear();
+        for (var r = 0; r < rowsOf.Count; r++)
+        {
+            var cells = rowsOf[r];
+            var filler = cols - cells.Sum(c => c.Span);
+            if (!ImGui.BeginTable($"##hrow{r}", cells.Count + (filler > 0 ? 1 : 0), ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.NoPadOuterX)) continue;
+            foreach (var c in cells) ImGui.TableSetupColumn($"##c{c.Id}", ImGuiTableColumnFlags.WidthStretch, c.Span);
+            if (filler > 0) ImGui.TableSetupColumn("##fill", ImGuiTableColumnFlags.WidthStretch, filler);
+            foreach (var c in cells)
+            {
+                ImGui.TableNextColumn();
+                var start = ImGui.GetCursorScreenPos();
+                var w = ImGui.GetContentRegionAvail().X;
+                if (c.Id == "+add") DrawAddTile();
+                else
+                {
+                    curTile = c.Id;
+                    ImGui.PushID(c.Id);
+                    TileById(c.Id)!();
+                    ImGui.PopID();
+                    curTile = null;
+                }
+                tileRects[c.Id] = (start, new Vector2(start.X + w, ImGui.GetCursorScreenPos().Y));
+            }
+            if (filler > 0) ImGui.TableNextColumn();
+            ImGui.EndTable();
+        }
+
+        // Перетаскивание: подсветка места и перенос при отпускании кнопки
+        if (dragId is null) return;
+        var mouse = ImGui.GetMousePos();
+        var target = tileRects.FirstOrDefault(kv => kv.Key != "+add" && mouse.X >= kv.Value.Min.X && mouse.X <= kv.Value.Max.X && mouse.Y >= kv.Value.Min.Y && mouse.Y <= kv.Value.Max.Y).Key;
+        var fg = ImGui.GetForegroundDrawList();
+        if (target is not null && target != dragId)
+        {
+            var rc = tileRects[target];
+            fg.AddRect(rc.Min, rc.Max, Theme.U32(Theme.Gold), 8f * S, ImDrawFlags.None, 2.5f * S);
+        }
+        var name = AllTiles.FirstOrDefault(t => t.Id == dragId).Name ?? dragId;
+        fg.AddRectFilled(mouse + new Vector2(14, 10) * S, mouse + new Vector2(14 * S + ImGui.CalcTextSize(name).X + 16 * S, 10 * S + ImGui.GetTextLineHeight() + 8 * S), Theme.U32(Theme.Alpha(Theme.PanelBg, 0.95f)), 6f * S);
+        fg.AddText(mouse + new Vector2(22, 14) * S, Theme.U32(Theme.Gold), name);
+        if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
+        {
+            if (target is not null && target != dragId)
+            {
+                var list = Plugin.Config.HomeTiles;
+                var from = list.IndexOf(dragId);
+                var to = list.IndexOf(target);
+                if (from >= 0 && to >= 0)
+                {
+                    list.RemoveAt(from);
+                    list.Insert(to, dragId);
+                    Plugin.Config.Save();
+                }
+            }
+            dragId = null;
+        }
+    }
+
+    private static void DrawAddTile()
+    {
+        Theme.Panel("taddtile", () =>
+        {
+            Theme.FaIcon(FontAwesomeIcon.Plus, Theme.Gold);
+            ImGui.SameLine();
+            ImGui.TextColored(Theme.GoldDim, "ДОБАВИТЬ ПЛИТКУ");
+            var shown = Plugin.Config.HomeTiles;
+            foreach (var (id, name) in AllTiles.Where(t => !shown.Contains(t.Id)))
+            {
+                if (ImGui.SmallButton($"+ {name}##add{id}"))
+                {
+                    shown.Add(id);
+                    Plugin.Config.Save();
+                }
+            }
         });
     }
 
@@ -232,29 +388,6 @@ internal sealed class HomeTab
         "weather" => TileWeather,
         _ => null,
     };
-
-    private static void DrawTilePicker()
-    {
-        if (!ImGui.BeginPopup("##hometiles")) return;
-        var list = Plugin.Config.HomeTiles;
-        ImGui.TextColored(Theme.TextDim, "Галочка — показывать, стрелки — порядок");
-        foreach (var (id, name) in AllTiles.OrderBy(t => list.IndexOf(t.Id) < 0 ? 100 : list.IndexOf(t.Id)))
-        {
-            var on = list.Contains(id);
-            if (ImGui.Checkbox($"{name}##ht{id}", ref on))
-            {
-                if (on) list.Add(id); else list.Remove(id);
-                Plugin.Config.Save();
-            }
-            if (!on) continue;
-            var idx = list.IndexOf(id);
-            ImGui.SameLine(220 * Theme.S);
-            if (ImGui.SmallButton($"↑##up{id}") && idx > 0) { (list[idx], list[idx - 1]) = (list[idx - 1], list[idx]); Plugin.Config.Save(); }
-            ImGui.SameLine();
-            if (ImGui.SmallButton($"↓##dn{id}") && idx < list.Count - 1) { (list[idx], list[idx + 1]) = (list[idx + 1], list[idx]); Plugin.Config.Save(); }
-        }
-        ImGui.EndPopup();
-    }
 
     private void TileTimers() => Tile("ttimers", FontAwesomeIcon.Stopwatch, "Таймеры", MainTab.Timers, () =>
     {

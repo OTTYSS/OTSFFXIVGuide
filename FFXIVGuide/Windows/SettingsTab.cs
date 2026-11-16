@@ -75,6 +75,15 @@ internal sealed class SettingsTab
                 if (ImGui.IsItemHovered()) ImGui.SetTooltip(name);
             }
 
+            ImGui.TextColored(Theme.TextDim, "Тема:");
+            ImGui.SameLine();
+            var themeIdx = cfg.ColorTheme;
+            if (Theme.Chips("sthemes", Theme.Palettes.Select(pl => pl.Name).ToArray(), ref themeIdx)) { cfg.ColorTheme = themeIdx; changed = true; }
+            ImGui.TextColored(Theme.TextDim, "Плотность:");
+            ImGui.SameLine();
+            var dens = cfg.Density;
+            if (Theme.Chips("sdensity", Theme.DensityNames, ref dens)) { cfg.Density = dens; changed = true; }
+
             var scale = cfg.UiScale;
             ImGui.SetNextItemWidth(220 * Theme.S);
             if (ImGui.SliderFloat("Размер окна и текста", ref scale, 0.8f, 1.4f, "%.2f×"))
@@ -84,6 +93,8 @@ internal sealed class SettingsTab
             }
             ImGui.SameLine();
             if (ImGui.SmallButton("Сброс")) { cfg.UiScale = 1f; changed = true; }
+            if (cfg.HiddenHints.Count > 0 && ImGui.SmallButton($"Показать скрытые подсказки вкладок ({cfg.HiddenHints.Count})")) { cfg.HiddenHints.Clear(); changed = true; }
+            ImGui.TextColored(Theme.Gray, "Ctrl+K — быстрый переход к любой вкладке и действию.");
         }));
 
         panels.Add(() => Theme.Panel("smini", () =>
@@ -100,7 +111,17 @@ internal sealed class SettingsTab
             var mini = cfg.MiniWindow;
             if (ImGui.Checkbox("Мини-окно поверх игры (сюжет, дейлики, FATE, марки)", ref mini))
                 Plugin.SetMiniWindow(mini);
-            ImGui.TextColored(Theme.Gray, "Также: /fguide mini");
+            ImGui.TextColored(Theme.Gray, "Также: /fguide mini. Правый клик по мини-окну — быстрые настройки.");
+            var mt = cfg.MiniTransparent;
+            if (ImGui.Checkbox("Прозрачное (без фона и рамки)", ref mt)) { cfg.MiniTransparent = mt; changed = true; }
+            ImGui.SameLine();
+            var ml = cfg.MiniLocked;
+            if (ImGui.Checkbox("Закрепить", ref ml)) { cfg.MiniLocked = ml; changed = true; }
+            var mhc = cfg.MiniHideInCombat;
+            if (ImGui.Checkbox("Прятать в бою", ref mhc)) { cfg.MiniHideInCombat = mhc; changed = true; }
+            ImGui.SameLine();
+            var mhs = cfg.MiniHideInCutscene;
+            if (ImGui.Checkbox("Прятать в катсценах", ref mhs)) { cfg.MiniHideInCutscene = mhs; changed = true; }
 
             var hk = cfg.HotkeyEnabled;
             if (ImGui.Checkbox("Горячая клавиша для окна", ref hk)) { cfg.HotkeyEnabled = hk; changed = true; }

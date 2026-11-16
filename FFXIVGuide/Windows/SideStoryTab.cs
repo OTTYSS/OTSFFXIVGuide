@@ -77,7 +77,7 @@ internal sealed class SideStoryTab
             try { Build(); }
             catch (Exception e) { Plugin.Log.Warning(e, "Побочные сюжеты: ошибка разбора"); chains = new(); }
         }
-        if (!PlayerInfo.Ready) { Theme.Panel("ssnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
 
         var stats = chains!.Select(c => (C: c, Done: c.Quests.Count(q => PlayerInfo.IsQuestDone(q.Id)))).ToList();
         Theme.Panel("sstop", () =>

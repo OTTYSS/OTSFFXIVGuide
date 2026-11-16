@@ -85,6 +85,14 @@ internal sealed class ItemsTab
             term.Length < 2 && categoryId == 0 ? "Начни вводить название или выбери категорию" :
             results.Count >= limit ? $"Показаны первые {limit}, уточни запрос" : $"Найдено: {results.Count}");
 
+        // ↑/↓ — листать результаты, Esc — закрыть карточку
+        var kIdx = selected is null ? -1 : results.IndexOf(selected);
+        var before = kIdx;
+        Theme.ListKeys(ref kIdx, results.Count);
+        if (kIdx >= 0 && kIdx != before) selected = results[kIdx];
+        var scrollTo = Theme.ListKeyMoved ? kIdx : -1;
+        if (selected is not null && Theme.ConsumeEsc()) selected = null;
+
         var avail = ImGui.GetContentRegionAvail();
         var rowH = 42 * Theme.S;
         if (ImGui.BeginChild("##ilist", new Vector2(Theme.SplitWidth("items", avail.X, 0.5f), 0)))
@@ -96,7 +104,7 @@ internal sealed class ItemsTab
                 var sub = (it.ItemLevel > 1 ? $"iLvl {it.ItemLevel} · " : "") + it.Category;
                 if (Theme.Card($"##i{it.Id}", it.Icon, it.Name, sub, owned > 0 ? $"×{owned}" : null, Theme.Green, selected == it, rowH))
                     WikiNav.Open(WikiKind.Item, it.Id, it.Name);
-            });
+            }, scrollTo);
         }
         ImGui.EndChild();
 

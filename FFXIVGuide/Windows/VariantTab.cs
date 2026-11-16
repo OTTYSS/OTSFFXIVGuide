@@ -63,7 +63,7 @@ internal sealed unsafe class VariantTab
             catch (Exception e) { Plugin.Log.Warning(e, "Variant: ошибка разбора"); series = new(); }
         }
         var ps = PlayerState.Instance();
-        if (!PlayerInfo.Ready || ps == null) { Theme.Panel("vvnone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем.")); return; }
+        if (!PlayerInfo.Ready || ps == null) { Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры."); return; }
         if (series!.Count == 0) return;
 
         // Бои V&C

@@ -83,6 +83,13 @@ internal static class WikiNav
 
     public static void Open(WikiKind kind, ulong id, string name) => Open(new WikiLink(kind, id, name));
 
+    /// <summary>Показать карточку, не трогая историю (для кнопок «назад/вперёд» окна).</summary>
+    public static void Show(WikiLink link)
+    {
+        Current = link;
+        Navigate?.Invoke(link);
+    }
+
     public static void Back()
     {
         if (back.Count == 0) return;

@@ -49,7 +49,7 @@ internal sealed class StoryTab
 
         if (!PlayerInfo.Ready)
         {
-            Theme.Panel("snone", () => ImGui.TextColored(Theme.TextDim, "Зайди персонажем — здесь появится прогресс по сюжету."));
+            Theme.NeedLogin("Зайди в игру персонажем — здесь появится прогресс по сюжету.");
             return;
         }
 

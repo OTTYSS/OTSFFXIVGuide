@@ -90,7 +90,7 @@ internal sealed class MountFarmTab
         var ix = OfflineDb.Instance.Index;
         if (ix is null)
         {
-            Theme.EmptyState(FontAwesomeIcon.Horse, "Нужна офлайн-база", "Источники маунтов берутся из офлайн-базы — скачай её в Настройках → «База данных».");
+            Theme.NeedOfflineDb("Источники маунтов и других коллекций берутся из офлайн-базы (≈45 МБ).");
             return;
         }
         if (duties is null || builtFor != OfflineDb.Version) { duties = Build(ix); builtFor = OfflineDb.Version; }

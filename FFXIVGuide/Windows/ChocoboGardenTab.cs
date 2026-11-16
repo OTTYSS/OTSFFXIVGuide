@@ -238,7 +238,7 @@ internal sealed class ChocoboGardenTab
         });
         if (text is null)
         {
-            if (WikiPage.IsLoading(SeedsPage)) Theme.Panel("gdload", () => ImGui.TextColored(Theme.TextDim, "Загружаю таблицу семян…"));
+            if (WikiPage.IsLoading(SeedsPage)) Theme.Skeleton("gdload", 5, "Загружаю таблицу семян…");
             return;
         }
         if (seedsFrom != text) { seedsFrom = text; seeds = ParseSeeds(text); }

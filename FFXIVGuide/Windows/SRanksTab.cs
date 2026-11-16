@@ -132,7 +132,7 @@ internal sealed class SRanksTab
         });
         if (ranks is null)
         {
-            if (loading) Theme.Panel("srload", () => ImGui.TextColored(Theme.TextDim, "Загружаю таблицу S-рангов…"));
+            if (loading) Theme.Skeleton("srload", 5, "Загружаю таблицу S-рангов…");
             return;
         }
 
