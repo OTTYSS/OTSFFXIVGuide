@@ -95,6 +95,7 @@ public sealed class Plugin : IDalamudPlugin
         offlineDb = new OfflineDb();
         PatchSnapshot.Start();
         names = new NameTranslations();
+        FFXIVGuide.Data.XivRusNames.Load();
         mobImages = new MobImages();
         // Тяжёлые справочники собираем в фоне сразу при запуске, чтобы разделы потом открывались мгновенно
         System.Threading.Tasks.Task.Run(() =>

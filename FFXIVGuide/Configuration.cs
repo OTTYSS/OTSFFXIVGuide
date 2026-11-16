@@ -45,6 +45,8 @@ public sealed class Configuration : IPluginConfiguration
     public bool WikiUseOnline { get; set; } = true;
     /// <summary>Названия: 0 — английские, 1 — русские, 2 — «русское (English)».</summary>
     public int NameMode { get; set; } = 2;
+    /// <summary>Брать русские названия у сообщества XIV Rus (важнее машинного перевода).</summary>
+    public bool UseXivRus { get; set; } = true;
     public Dictionary<string, FFXIVGuide.Windows.VoyageInfo> Voyages { get; set; } = new();
     public bool NotifyRetainers { get; set; } = true;
     public bool NotifyVoyages { get; set; } = true;

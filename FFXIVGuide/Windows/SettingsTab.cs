@@ -275,7 +275,17 @@ internal sealed class SettingsTab
             ImGui.SetNextItemWidth(240 * Theme.S);
             var mode = cfg.NameMode;
             if (ImGui.Combo("Показывать названия##nm", ref mode, "Английские\0Русские\0Русское (English)\0")) { cfg.NameMode = mode; changed = true; }
-            ImGui.TextColored(Theme.TextDim, $"Переведено названий: {tr.Count:N0}. Поиск по-русски работает по всем переведённым.");
+            var xr = cfg.UseXivRus;
+            if (ImGui.Checkbox("Переводы сообщества XIV Rus (xivrus.ru) вместо машинного##xr", ref xr)) { cfg.UseXivRus = xr; changed = true; if (xr) XivRusNames.AutoUpdate(); }
+            Theme.Tooltip("Ручной перевод фанатского русификатора XIV Rus: маунты, минионы, статусы, навыки, данжи и часть предметов, квестов, NPC. Что ещё не переведено — переводит Google.");
+            if (cfg.UseXivRus)
+            {
+                ImGui.TextColored(Theme.TextDim, XivRusNames.Busy ? XivRusNames.Status
+                    : $"XIV Rus: {XivRusNames.Count:N0} названий" + (XivRusNames.Updated is { } xu ? $", обновлено {xu:dd.MM}" : " — ещё не скачано"));
+                ImGui.SameLine();
+                if (!XivRusNames.Busy && ImGui.SmallButton("Обновить##xru")) XivRusNames.Update();
+            }
+            ImGui.TextColored(Theme.TextDim, $"Машинный перевод: {tr.Count:N0} названий. Поиск по-русски работает по всем переведённым.");
             if (tr.Running)
             {
                 Theme.Progress(tr.Status, tr.Done, Math.Max(1, tr.Total), Theme.Blue);

@@ -49,7 +49,13 @@ public sealed class NameTranslations : IDisposable
 
     // ───────────── Использование ─────────────
 
-    public string? Get(string en) => en.Length > 0 && ru.TryGetValue(en, out var r) ? r : null;
+    /// <summary>Русское название: сначала перевод сообщества XIV Rus, если его нет — машинный.</summary>
+    public string? Get(string en)
+    {
+        if (en.Length == 0) return null;
+        if (Plugin.Config.UseXivRus && XivRusNames.Get(en) is { } x) return x;
+        return ru.TryGetValue(en, out var r) ? r : null;
+    }
 
     /// <summary>Как показывать название по настройке: английское, русское или «русское (English)».</summary>
     public static string Show(string en)
@@ -106,7 +112,9 @@ public sealed class NameTranslations : IDisposable
                 // Индексы мобов/NPC могут ещё грузиться
                 for (var i = 0; i < 30 && (WikiService.Instance.MobIndex() is null || WikiService.Instance.NpcIndex() is null); i++)
                     await Task.Delay(1000, token).ConfigureAwait(false);
-                var todo = Collect().Where(n => !ru.ContainsKey(n)).OrderBy(n => n.Length).ToList();
+                // Что уже перевело сообщество XIV Rus — машинно не переводим
+                var todo = Collect().Where(n => !ru.ContainsKey(n) && !(Plugin.Config.UseXivRus && XivRusNames.Get(n) is not null))
+                    .OrderBy(n => n.Length).ToList();
                 Total = todo.Count;
                 Done = 0;
                 if (todo.Count == 0) { Status = $"Все названия переведены ({ru.Count:N0})."; return; }
@@ -164,6 +172,9 @@ public sealed class NameTranslations : IDisposable
     public static void AutoResume()
     {
         if (resumeAt == DateTime.MaxValue || DateTime.Now < resumeAt) return;
+        // Сначала подтягиваем переводы сообщества XIV Rus, машинный перевод — только для остального
+        XivRusNames.AutoUpdate();
+        if (XivRusNames.Busy) { resumeAt = DateTime.Now.AddSeconds(15); return; }
         resumeAt = DateTime.MaxValue;
         if (Instance is { Running: false, Count: > 0 } && OfflineDb.Instance?.Installed == true) Instance.Start();
     }
