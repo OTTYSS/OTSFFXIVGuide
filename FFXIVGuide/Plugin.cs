@@ -127,7 +127,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Commands.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | patch | mentor | side | farm | housing | lvl | aether | faux | carnivale | clan | squadron | trove | fish | blu | target | peek | mini | overlay | settings",
+            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | patch | mentor | side | farm | housing | lvl | aether | faux | carnivale | clan | squadron | trove | ishgard | repair | minigames | fish | blu | target | peek | mini | overlay | settings",
         });
 
         PluginInterface.UiBuilder.Draw += windows.Draw;
@@ -139,6 +139,8 @@ public sealed class Plugin : IDalamudPlugin
         ClientState.TerritoryChanged += DutyRecorder.OnTerritoryChanged;
         Framework.Update += hunts.OnUpdate;
         Framework.Update += OnHotkey;
+        Framework.Update += OnWatchers;
+        DutyState.DutyStarted += FFXIVGuide.Data.Watchers.OnDutyStarted;
         DutyState.DutyCompleted += FFXIVGuide.Data.RaidTier.OnDutyCompleted;
 
         // Если плагин включили уже внутри данжа — сразу показать механики
@@ -161,6 +163,8 @@ public sealed class Plugin : IDalamudPlugin
     private static Plugin? Instance;
 
     /// <summary>Горячая клавиша: по умолчанию Ctrl+Shift+G открывает/закрывает окно.</summary>
+    private static void OnWatchers(IFramework framework) => FFXIVGuide.Data.Watchers.Tick();
+
     private void OnHotkey(IFramework framework)
     {
         if (!Config.HotkeyEnabled) return;
@@ -231,6 +235,9 @@ public sealed class Plugin : IDalamudPlugin
             "clan" or "bills" or "клан" => MainTab.ClanHunt,
             "squadron" or "сквадрон" => MainTab.Squadron,
             "trove" or "tomes" => MainTab.Trove,
+            "ishgard" or "diadem" or "ишгард" => MainTab.Ishgard,
+            "repair" or "materia" or "food" or "износ" or "еда" => MainTab.GearState,
+            "minigames" or "racing" or "verminion" or "mahjong" => MainTab.MiniGames,
             "farm" or "фарм" => MainTab.MountFarm,
             "furniture" or "мебель" => MainTab.Furniture,
             "ventures" or "вылазки" => MainTab.Ventures,
@@ -308,6 +315,8 @@ public sealed class Plugin : IDalamudPlugin
     {
         Framework.Update -= hunts.OnUpdate;
         Framework.Update -= OnHotkey;
+        Framework.Update -= OnWatchers;
+        DutyState.DutyStarted -= FFXIVGuide.Data.Watchers.OnDutyStarted;
         DutyState.DutyCompleted -= FFXIVGuide.Data.RaidTier.OnDutyCompleted;
         Instance = null;
         ClientState.Login -= OnLogin;

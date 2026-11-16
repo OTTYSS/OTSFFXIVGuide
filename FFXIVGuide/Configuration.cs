@@ -99,6 +99,21 @@ public sealed class Configuration : IPluginConfiguration
     public bool MiniLocked { get; set; } = false;
     public bool MiniHideInCombat { get; set; } = false;
     public bool MiniHideInCutscene { get; set; } = true;
+
+    // Напоминания о жилье (PaissaDB, раз в 15 минут — только если включено)
+    public bool HousingWatch { get; set; } = false;
+    public uint HousingWatchDistrict { get; set; } = 0;
+    public int HousingWatchSize { get; set; } = -1;
+    public int HousingWatchBuyer { get; set; } = 0;
+    public int HousingLastPhase { get; set; } = 0;
+    public long HousingLastPhaseUntil { get; set; } = 0;
+    public HashSet<string> HousingSeenPlots { get; set; } = new();
+
+    // Снаряжение и еда
+    public int RepairWarnPercent { get; set; } = 20;
+    public bool SpiritbondWarn { get; set; } = true;
+    public bool FoodReminder { get; set; } = true;
+    public int FoodWarnMinutes { get; set; } = 10;
     public float UiScale { get; set; } = 1f;
     /// <summary>Размер картинок в списках коллекций: 0 мелкие, 1 средние, 2 крупные, 3 плитки.</summary>
     public int PreviewSize { get; set; } = 1;

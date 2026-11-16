@@ -6,7 +6,7 @@ namespace FFXIVGuide.Data;
 /// <summary>Единый центр уведомлений: в чат, всплывающим окном или и то и другое — настраивается по типам.</summary>
 public static class Notify
 {
-    public enum Kind { Weather, Retainer, Voyage, House, Event }
+    public enum Kind { Weather, Retainer, Voyage, House, Event, Housing, Gear, Food }
 
     public static readonly (Kind Kind, string Name)[] Kinds =
     {
@@ -15,6 +15,9 @@ public static class Notify
         (Kind.Voyage, "Субмарины и дирижабли вернулись"),
         (Kind.House, "Скоро снос дома"),
         (Kind.Event, "Началось сезонное событие"),
+        (Kind.Housing, "Лотерея жилья и новые участки"),
+        (Kind.Gear, "Износ снаряжения и материя"),
+        (Kind.Food, "Еда в данже"),
     };
 
     public static readonly string[] Modes = { "Выключено", "В чат", "Всплывающее", "Чат и всплывающее" };

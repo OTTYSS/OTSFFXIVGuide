@@ -185,6 +185,28 @@ internal sealed class HousingTab
             }
             ImGui.TextColored(Theme.TextDim, "Данные: PaissaDB. Их присылают игроки с плагином PaissaHouse, поэтому участок может быть уже занят. Свежесть указана у каждого.");
             ImGui.TextColored(Theme.TextDim, "Лотерея идёт циклами по 9 дней: 5 дней приём заявок, 4 дня — итоги и оформление покупки победителем.");
+            var watch = Plugin.Config.HousingWatch;
+            if (ImGui.Checkbox("Уведомлять о лотерее и новых участках на моём мире##hswatch", ref watch))
+            {
+                Plugin.Config.HousingWatch = watch;
+                Plugin.Config.Save();
+            }
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Раз в 15 минут проверяет PaissaDB: начало приёма заявок, период итогов и новые участки под фильтр");
+            if (watch)
+            {
+                ImGui.SameLine();
+                if (ImGui.SmallButton("Фильтр уведомлений = фильтры ниже##hswf"))
+                {
+                    Plugin.Config.HousingWatchDistrict = districtFilter == 0 ? 0 : Districts[districtFilter - 1].Id;
+                    Plugin.Config.HousingWatchSize = sizeFilter - 1;
+                    Plugin.Config.HousingWatchBuyer = buyerFilter;
+                    Plugin.Config.HousingSeenPlots.Clear();
+                    Plugin.Config.Save();
+                }
+                var c = Plugin.Config;
+                var dn = c.HousingWatchDistrict == 0 ? "все районы" : Districts.FirstOrDefault(d => d.Id == c.HousingWatchDistrict).Name;
+                ImGui.TextColored(Theme.Gray, $"Сейчас уведомляю о: {dn}, размер {(c.HousingWatchSize < 0 ? "любой" : SizeNames[c.HousingWatchSize])}, {(c.HousingWatchBuyer == 0 ? "для всех" : c.HousingWatchBuyer == 1 ? "для себя" : "для FC")}. Куда — Настройки → Уведомления.");
+            }
             if (rows is not null) ImGui.TextColored(Theme.TextDim, $"Обновлено: {fetched:HH:mm}.");
             if (error is not null) ImGui.TextColored(Theme.Red, $"Не удалось загрузить: {error}");
         });

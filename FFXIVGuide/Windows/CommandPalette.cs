@@ -19,6 +19,8 @@ internal sealed class CommandPalette
     private string query = "";
     private int selected;
     private bool openRequested, focus;
+    // Прокручиваем к выбранной строке только после нажатия стрелок, иначе колесо мыши «отбирается»
+    private bool scrollToSelected;
     private List<Command> all = new();
 
     public CommandPalette(Func<IEnumerable<Command>> source, Action<string> search)
@@ -102,11 +104,11 @@ internal sealed class CommandPalette
         ImGui.SameLine();
         if (focus) { ImGui.SetKeyboardFocusHere(); focus = false; }
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.InputTextWithHint("##cmdq", "Куда перейти или что сделать… (вкладка, карточка, действие)", ref query, 128)) selected = 0;
+        if (ImGui.InputTextWithHint("##cmdq", "Куда перейти или что сделать… (вкладка, карточка, действие)", ref query, 128)) { selected = 0; scrollToSelected = true; }
 
         var results = Results();
-        if (ImGui.IsKeyPressed(ImGuiKey.DownArrow)) selected = Math.Min(selected + 1, results.Count - 1);
-        if (ImGui.IsKeyPressed(ImGuiKey.UpArrow)) selected = Math.Max(selected - 1, 0);
+        if (ImGui.IsKeyPressed(ImGuiKey.DownArrow)) { selected = Math.Min(selected + 1, results.Count - 1); scrollToSelected = true; }
+        if (ImGui.IsKeyPressed(ImGuiKey.UpArrow)) { selected = Math.Max(selected - 1, 0); scrollToSelected = true; }
         var run = ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.KeypadEnter);
         if (ImGui.IsKeyPressed(ImGuiKey.Escape)) { ImGui.CloseCurrentPopup(); ImGui.EndPopup(); return; }
 
@@ -126,7 +128,12 @@ internal sealed class CommandPalette
                 var hov = ImGui.IsItemHovered();
                 if (hov && ImGui.GetIO().MouseDelta != Vector2.Zero) selected = i;
                 var sel = i == selected;
-                if (sel) ImGui.SetScrollHereY();
+                if (sel && scrollToSelected)
+                {
+                    // Только если строка ушла за край списка
+                    if (pos.Y < ImGui.GetWindowPos().Y || pos.Y + rowH > ImGui.GetWindowPos().Y + ImGui.GetWindowHeight()) ImGui.SetScrollHereY();
+                    scrollToSelected = false;
+                }
                 if (sel || hov) dl.AddRectFilled(pos, pos + size, Theme.U32(sel ? Theme.Alpha(Theme.Gold, 0.16f) : Theme.CardHover), 6f * S);
                 ImGui.PushFont(UiBuilder.IconFont);
                 var ic = c.Icon.ToIconString();
