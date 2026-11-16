@@ -202,7 +202,7 @@ public sealed class ItemPeekWindow : Window
         {
             ImGui.Separator();
             ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 420 * Theme.S);
-            ImGui.TextColored(Theme.TextDim, rd.Description.ExtractText());
+            ImGui.TextColored(Theme.TextDim, XivRusNames.Ru(rd.Description.ExtractText()));
             ImGui.PopTextWrapPos();
         }
         ImGui.TextColored(Theme.Gray, replacing ? "Карточка FFXIV Guide вместо игровой подсказки · /fguide peek" : "Полная карточка: /fguide peek");

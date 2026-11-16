@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
@@ -28,7 +29,16 @@ internal sealed class LevelPlannerTab
     private sealed record Ing(uint Item, string Name, int Amount);
     private sealed record Rec(uint Id, uint Item, string Name, uint Icon, int Level, int Yield, string Category, List<Ing> Ings, bool AllMarket);
 
-    private static readonly Dictionary<int, List<Rec>> recipeCache = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, List<Rec>> recipeCache = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, Task> recipeTasks = new();
+
+    /// <summary>Готовы ли рецепты профессии; если нет — запускает сборку в фоне (чтобы окно не подвисало).</summary>
+    private static bool RecipesReady(int craftType)
+    {
+        if (recipeCache.ContainsKey(craftType)) return true;
+        recipeTasks.GetOrAdd(craftType, ct => Task.Run(() => Recipes(ct)));
+        return false;
+    }
     private static Dictionary<uint, Rec>? byItemCache;
     private static int byItemJob = -1;
 
@@ -176,6 +186,7 @@ internal sealed class LevelPlannerTab
     private void DrawCrafter(int level)
     {
         var craftType = job - 8;
+        if (!RecipesReady(craftType)) { Theme.Skeleton("lprec", 6, "Собираю рецепты профессии…"); return; }
         var all = Recipes(craftType);
         var byItem = ByItem(craftType);
         var firsts = all.Where(r => r.Level <= level && r.Level >= Math.Max(1, level - 4) && !Completed(r.Id)).ToList();

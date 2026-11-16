@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
@@ -18,6 +19,7 @@ internal sealed class CarnivaleTab
     private sealed record Stage(uint Id, int Order, string Name, int Ideal, int Standard, List<List<Enemy>> Acts);
 
     private List<Stage>? stages;
+    private Task<List<Stage>>? building;
     private uint selected;
 
     private static List<Stage> Build()
@@ -93,7 +95,12 @@ internal sealed class CarnivaleTab
     public void Draw()
     {
         Theme.Header("Masked Carnivale", "Стадии синего мага: что пройдено, недельные задания и враги с уязвимостями — по ним подбирай навыки");
-        stages ??= Build();
+        if (stages is null)
+        {
+            building ??= Task.Run(Build);
+            if (!building.IsCompleted) { Theme.Skeleton("mcload", 6, "Собираю стадии…"); return; }
+            stages = building.Result;
+        }
         if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: прогресс Carnivale берётся из игры."); return; }
 
         var weekly = Weekly();

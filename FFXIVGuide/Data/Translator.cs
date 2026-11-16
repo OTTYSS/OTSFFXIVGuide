@@ -22,7 +22,12 @@ public sealed class Translator : IDisposable
     private readonly ConcurrentDictionary<string, string> done = new();
     private readonly ConcurrentDictionary<string, byte> failed = new();
     private readonly ConcurrentDictionary<string, byte> inFlight = new();
-    private readonly SemaphoreSlim limit = new(4);
+    // Очередь: переводим по одному с паузой, иначе Google отвечает «429 Too Many Requests»
+    private readonly ConcurrentQueue<string> queue = new();
+    private readonly ConcurrentDictionary<string, int> attempts = new();
+    private int workerRunning;
+    private DateTime pauseUntil = DateTime.MinValue;
+    private int backoff;
 
     private string? file;
     private DateTime nextSave = DateTime.MaxValue;
@@ -63,7 +68,11 @@ public sealed class Translator : IDisposable
     public int Count => done.Count;
 
     /// <summary>Перевод, если уже готов.</summary>
-    public string? Get(string text) => done.TryGetValue(text, out var t) ? t : null;
+    public string? Get(string text)
+    {
+        if (Plugin.Config.UseXivRus && XivRusNames.Text(text) is { } x) return x;
+        return done.TryGetValue(text, out var t) ? t : null;
+    }
 
     public bool IsLoading(string text) => inFlight.ContainsKey(text);
     public bool IsFailed(string text) => failed.ContainsKey(text);
@@ -75,9 +84,35 @@ public sealed class Translator : IDisposable
         {
             if (string.IsNullOrWhiteSpace(text) || done.ContainsKey(text) || failed.ContainsKey(text))
                 continue;
+            // Есть ручной перевод сообщества XIV Rus — в Google не отправляем
+            if (Plugin.Config.UseXivRus && XivRusNames.Text(text) is not null)
+                continue;
             if (!inFlight.TryAdd(text, 0))
                 continue;
-            _ = Task.Run(() => Translate(text));
+            queue.Enqueue(text);
+        }
+        if (!queue.IsEmpty && Interlocked.CompareExchange(ref workerRunning, 1, 0) == 0)
+            _ = Task.Run(Worker);
+    }
+
+    private async Task Worker()
+    {
+        try
+        {
+            while (queue.TryDequeue(out var text))
+            {
+                var wait = pauseUntil - DateTime.Now;
+                if (wait > TimeSpan.Zero) await Task.Delay(wait).ConfigureAwait(false);
+                await Translate(text).ConfigureAwait(false);
+                await Task.Delay(350).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref workerRunning, 0);
+            // Если пока заканчивали, добавили новое — запускаемся снова
+            if (!queue.IsEmpty && Interlocked.CompareExchange(ref workerRunning, 1, 0) == 0)
+                _ = Task.Run(Worker);
         }
     }
 
@@ -100,7 +135,7 @@ public sealed class Translator : IDisposable
 
     private async Task Translate(string text)
     {
-        await limit.WaitAsync().ConfigureAwait(false);
+        var requeued = false;
         try
         {
             // Ключи с префиксом RuPrefix — обратный перевод (русский запрос → английский, для поиска)
@@ -121,16 +156,29 @@ public sealed class Translator : IDisposable
                 if (nextSave == DateTime.MaxValue) nextSave = DateTime.Now.AddSeconds(20);
             }
             else failed[text] = 0;
+            backoff = 0;
+        }
+        catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+        {
+            // Google просит подождать: пауза растёт (15 с, 30 с, … до 2 мин), текст возвращаем в очередь
+            backoff = Math.Min(backoff + 1, 8);
+            pauseUntil = DateTime.Now.AddSeconds(15 * backoff);
+            if (attempts.AddOrUpdate(text, 1, (_, n) => n + 1) <= 5) { queue.Enqueue(text); requeued = true; }
+            else failed[text] = 0;
+            if (backoff == 1) Plugin.Log.Info("Перевод: Google просит подождать — пауза и повтор");
         }
         catch (Exception e)
         {
-            failed[text] = 0;
-            Plugin.Log.Warning(e, "Перевод: не удалось перевести текст");
+            if (attempts.AddOrUpdate(text, 1, (_, n) => n + 1) <= 2) { queue.Enqueue(text); requeued = true; }
+            else
+            {
+                failed[text] = 0;
+                Plugin.Log.Warning(e, "Перевод: не удалось перевести текст");
+            }
         }
         finally
         {
-            inFlight.TryRemove(text, out _);
-            limit.Release();
+            if (!requeued) inFlight.TryRemove(text, out _);
         }
     }
 
@@ -138,6 +186,5 @@ public sealed class Translator : IDisposable
     {
         Save();
         http.Dispose();
-        limit.Dispose();
     }
 }

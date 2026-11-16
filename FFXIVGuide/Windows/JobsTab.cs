@@ -44,7 +44,7 @@ internal sealed class JobsTab
         var parent = cj.ClassJobParent.RowId;
         var transient = Plugin.Data.GetExcelSheet<ActionTransient>();
         var traitT = Plugin.Data.GetExcelSheet<TraitTransient>();
-        string Desc(uint id) => transient.GetRowOrDefault(id)?.Description.ExtractText() ?? "";
+        string Desc(uint id) => XivRusNames.Ru(transient.GetRowOrDefault(id)?.Description.ExtractText() ?? "");
 
         string Meta(Lumina.Excel.Sheets.Action a)
         {

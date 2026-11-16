@@ -322,7 +322,7 @@ internal sealed class ItemsTab
             });
         }
 
-        var desc = it.Description.ExtractText();
+        var desc = XivRusNames.Ru(it.Description.ExtractText());
         if (!string.IsNullOrWhiteSpace(desc))
             Theme.Panel("idesc", () => ImGui.TextColored(Theme.TextDim, desc));
 

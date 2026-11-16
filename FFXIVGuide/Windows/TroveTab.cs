@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -18,6 +19,7 @@ internal sealed class TroveTab
     private sealed record Tome(uint Id, string Name, uint Icon, List<Reward> Rewards);
 
     private List<Tome>? tomes;
+    private Task<List<Tome>>? building;
     private int pick = -1;
     private bool hideOwned = true;
 
@@ -61,7 +63,12 @@ internal sealed class TroveTab
     public void Draw()
     {
         Theme.Header("Moogle Treasure Trove", "Событие с томами: сколько есть, что ещё не получено и сколько томов на это нужно");
-        tomes ??= Build();
+        if (tomes is null)
+        {
+            building ??= Task.Run(Build);
+            if (!building.IsCompleted) { Theme.Skeleton("mtload", 6, "Ищу награды за томы…"); return; }
+            tomes = building.Result;
+        }
         if (tomes.Count == 0) { Theme.EmptyState(FontAwesomeIcon.Gift, "Нет данных", "В файлах игры не нашлось обмена Irregular Tomestone."); return; }
 
         // По умолчанию — тот том, который у тебя есть, иначе самый новый

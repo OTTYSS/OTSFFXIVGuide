@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Lumina.Excel.Sheets;
 
@@ -93,7 +94,13 @@ public sealed class WikiService : IDisposable
     private const string Base = "https://www.garlandtools.org/db/doc/";
     private static readonly TimeSpan DiskTtl = TimeSpan.FromDays(7);
 
-    private readonly HttpClient http = Net.Create(TimeSpan.FromSeconds(30));
+    // Garland иногда долго не отвечает: ждём недолго и повторяем, а не висим по 30 секунд
+    private readonly HttpClient http = Net.Create(TimeSpan.FromSeconds(12));
+    // Если сайт недоступен несколько раз подряд — на время не обращаемся к нему вовсе (данные берутся из офлайн-базы)
+    private int netFailures;
+    private DateTime siteDownUntil = DateTime.MinValue;
+    private readonly ConcurrentDictionary<string, DateTime> errorAt = new();
+    public bool SiteDown => DateTime.UtcNow < siteDownUntil;
     private readonly string cacheDir;
     private readonly ConcurrentDictionary<string, object?> docs = new();
     private readonly ConcurrentDictionary<string, byte> inFlight = new();
@@ -111,7 +118,7 @@ public sealed class WikiService : IDisposable
 
     // Офлайн-база в приоритете; Garland дополняет её (дроп мобов, лут по боссам), если разрешено в настройках.
     private static OfflineIndex? Offline => OfflineDb.Instance?.Index;
-    private static bool Online => Offline is null || Plugin.Config.WikiUseOnline;
+    private static bool Online => Offline is null || (Plugin.Config.WikiUseOnline && Instance?.SiteDown != true);
 
     private T? Online_<T>(string path, Func<JsonElement, T> parse) where T : class => Online ? Get(path, parse) : null;
 
@@ -245,6 +252,12 @@ public sealed class WikiService : IDisposable
     private T? Get<T>(string path, Func<JsonElement, T> parse) where T : class
     {
         if (docs.TryGetValue(path, out var o)) return o as T;
+        // Сетевые ошибки «забываем» через 2 минуты — тогда попробуем снова сами
+        if (errors.ContainsKey(path) && errorAt.TryGetValue(path, out var at) && DateTime.UtcNow - at > TimeSpan.FromMinutes(2))
+        {
+            errors.TryRemove(path, out _);
+            errorAt.TryRemove(path, out _);
+        }
         if (errors.ContainsKey(path) || !inFlight.TryAdd(path, 0)) return null;
         _ = Task.Run(() => Load(path, parse));
         return null;
@@ -268,15 +281,33 @@ public sealed class WikiService : IDisposable
             {
                 try
                 {
-                    using var resp = await http.GetAsync(Base + path + ".json").ConfigureAwait(false);
-                    if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    if (SiteDown) throw new HttpRequestException("Garland Tools временно недоступен");
+                    HttpResponseMessage? resp = null;
+                    // Одна повторная попытка после короткой паузы
+                    for (var attempt = 0; ; attempt++)
                     {
-                        docs[path] = null;
-                        errors[path] = "Нет данных на Garland Tools";
-                        return;
+                        try
+                        {
+                            resp = await http.GetAsync(Base + path + ".json").ConfigureAwait(false);
+                            break;
+                        }
+                        catch (Exception) when (attempt == 0)
+                        {
+                            await Task.Delay(2000).ConfigureAwait(false);
+                        }
                     }
-                    resp.EnsureSuccessStatusCode();
-                    json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    using (resp)
+                    {
+                        if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+                        {
+                            docs[path] = null;
+                            errors[path] = "Нет данных на Garland Tools";
+                            return;
+                        }
+                        resp.EnsureSuccessStatusCode();
+                        json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    }
+                    Interlocked.Exchange(ref netFailures, 0);
                     try { await File.WriteAllTextAsync(file, json).ConfigureAwait(false); } catch { /* кеш не обязателен */ }
                 }
                 catch when (File.Exists(file))
@@ -291,8 +322,17 @@ public sealed class WikiService : IDisposable
         }
         catch (Exception e)
         {
-            Plugin.Log.Warning(e, $"Вики: не удалось загрузить {path}");
-            errors[path] = "Не удалось загрузить (нет сети или сайт недоступен)";
+            var wasDown = SiteDown;
+            if (Interlocked.Increment(ref netFailures) >= 3 && !wasDown)
+            {
+                siteDownUntil = DateTime.UtcNow.AddMinutes(5);
+                Plugin.Log.Warning("Вики: Garland Tools не отвечает — 5 минут беру данные только из офлайн-базы");
+            }
+            // В лог — только первую ошибку, а не каждую пока сайт лежит
+            if (!wasDown) Plugin.Log.Debug(e, $"Вики: не удалось загрузить {path}");
+            errors[path] = SiteDown ? "Garland Tools сейчас не отвечает — показаны данные офлайн-базы, повторю позже"
+                                    : "Не удалось загрузить (нет сети или сайт недоступен) — повторю через пару минут";
+            errorAt[path] = DateTime.UtcNow;
         }
         finally
         {

@@ -27,7 +27,7 @@ internal sealed class StatusesTab
     {
         rows = Plugin.Data.GetExcelSheet<Status>()
             .Where(s => s.Name.ExtractText().Length > 0 && s.Icon != 0)
-            .Select(s => new Row(s.RowId, s.Name.ExtractText(), s.Description.ExtractText(), s.Icon, s.StatusCategory, s.MaxStacks, s.CanDispel, s.IsPermanent))
+            .Select(s => new Row(s.RowId, s.Name.ExtractText(), XivRusNames.Ru(s.Description.ExtractText()), s.Icon, s.StatusCategory, s.MaxStacks, s.CanDispel, s.IsPermanent))
             .GroupBy(r => (r.Name, r.Desc)).Select(g => g.First()) // одинаковые копии под разные бои
             .OrderBy(r => r.Name)
             .ToList();
@@ -116,7 +116,7 @@ internal sealed class StatusesTab
         foreach (var s in target.StatusList)
         {
             if (s.StatusId == 0 || sheet.GetRowOrDefault(s.StatusId) is not { } st || st.Name.ExtractText().Length == 0) continue;
-            var row = new Row(st.RowId, st.Name.ExtractText(), st.Description.ExtractText(), st.Icon, st.StatusCategory, st.MaxStacks, st.CanDispel, st.IsPermanent);
+            var row = new Row(st.RowId, st.Name.ExtractText(), XivRusNames.Ru(st.Description.ExtractText()), st.Icon, st.StatusCategory, st.MaxStacks, st.CanDispel, st.IsPermanent);
             var left = s.RemainingTime > 0 ? $"{s.RemainingTime:0} с" : "";
             var stacks = st.MaxStacks > 1 && s.Param > 0 ? $"×{s.Param}" : "";
             live.Add((row, string.Join(" ", new[] { left, stacks }.Where(x => x.Length > 0))));

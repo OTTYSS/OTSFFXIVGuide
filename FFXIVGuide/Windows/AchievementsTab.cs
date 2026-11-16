@@ -195,7 +195,7 @@ internal sealed unsafe class AchievementsTab
             if (a.Item.RowId != 0 && a.Item.ValueNullable is { } it && !it.Name.IsEmpty)
                 reward.Add(it.Name.ExtractText());
 
-            c.Entries.Add(new Entry(a.RowId, a.Name.ExtractText(), a.Description.ExtractText(), a.Icon, a.Points, string.Join(", ", reward), cat.Value.RowId));
+            c.Entries.Add(new Entry(a.RowId, a.Name.ExtractText(), XivRusNames.Ru(a.Description.ExtractText()), a.Icon, a.Points, string.Join(", ", reward), cat.Value.RowId));
         }
 
         foreach (var c in result.Values)

@@ -187,7 +187,7 @@ internal sealed class CollectionsTab
             .Select(t =>
             {
                 var how = byTitle.TryGetValue(t.RowId, out var a)
-                    ? $"Достижение «{NameTranslations.Show(a.Name.ExtractText())}»: {a.Description.ExtractText()}"
+                    ? $"Достижение «{NameTranslations.Show(a.Name.ExtractText())}»: {XivRusNames.Ru(a.Description.ExtractText())}"
                     : "Не за достижение (квест, событие или контент)";
                 var name = t.Masculine.ExtractText();
                 var fem = t.Feminine.ExtractText();

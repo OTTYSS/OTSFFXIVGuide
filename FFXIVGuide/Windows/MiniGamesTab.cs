@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -23,11 +24,13 @@ internal sealed class MiniGamesTab
 
     private sealed record Ach(uint Id, string Name, string Desc, uint Icon);
     private static List<Ach>[]? achs;
+    private static Task<List<Ach>[]>? achTask;
 
     private static List<Ach>[] Achievements()
     {
         if (achs is not null) return achs;
-        achs = new[] { new List<Ach>(), new List<Ach>(), new List<Ach>() };
+        // Собираем в локальную переменную и публикуем целиком: вызывается из фона
+        var res = new[] { new List<Ach>(), new List<Ach>(), new List<Ach>() };
         var en = Plugin.Data.GetExcelSheet<Achievement>(Dalamud.Game.ClientLanguage.English);
         var loc = Plugin.Data.GetExcelSheet<Achievement>();
         foreach (var a in en)
@@ -38,10 +41,11 @@ internal sealed class MiniGamesTab
                 if (Keys[g].Any(text.Contains))
                 {
                     var l = loc.GetRowOrDefault(a.RowId);
-                    achs[g].Add(new Ach(a.RowId, l?.Name.ExtractText() ?? a.Name.ExtractText(), l?.Description.ExtractText() ?? "", a.Icon));
+                    res[g].Add(new Ach(a.RowId, l?.Name.ExtractText() ?? a.Name.ExtractText(), l?.Description.ExtractText() ?? "", a.Icon));
                     break;
                 }
         }
+        achs = res;
         return achs;
     }
 
@@ -92,6 +96,11 @@ internal sealed class MiniGamesTab
             });
         }
 
+        if (achs is null)
+        {
+            achTask ??= Task.Run(Achievements);
+            if (!achTask.IsCompleted) { Theme.Skeleton("mgload", 5, "Собираю достижения…"); return; }
+        }
         var list = Achievements()[game];
         var ach = PlayerInfo.Ready ? FFXIVClientStructs.FFXIV.Client.Game.UI.Achievement.Instance() : null;
         Theme.Panel("mgach", () =>
