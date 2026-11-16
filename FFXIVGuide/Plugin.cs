@@ -83,6 +83,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         MigrateFromOldName();
         Config = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Config.Repair();
         Instance = this;
 
         Theme.InitFonts();

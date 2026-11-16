@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Configuration;
+using Newtonsoft.Json;
 using FFXIVGuide.Windows;
 
 namespace FFXIVGuide;
@@ -20,10 +22,18 @@ public sealed class Configuration : IPluginConfiguration
     public List<string> WeatherAlerts { get; set; } = new();
     public List<string> ShoppingList { get; set; } = new();
     public List<int> PinnedTabs { get; set; } = new();
+    // Replace: иначе при загрузке сохранённые значения дописываются к значениям по умолчанию и плодят дубли
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public HashSet<string> MapMarkerKinds { get; set; } = new() { "vista", "current" };
     public Dictionary<string, int> NotifyModes { get; set; } = new();
-    public List<string> HomeTiles { get; set; } = new() { "story", "daily", "character", "progress", "timers", "ocean", "week" };
-    public List<string> MiniBlocks { get; set; } = new() { "story", "daily", "fate", "target", "hunt", "timers" };
+    // Replace: иначе при загрузке сохранённые значения дописываются к значениям по умолчанию и плодят дубли
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<string> HomeTiles { get; set; } = DefaultHomeTiles.ToList();
+    private static readonly string[] DefaultHomeTiles = { "story", "daily", "character", "progress", "timers", "ocean", "week" };
+    // Replace: иначе при загрузке сохранённые значения дописываются к значениям по умолчанию и плодят дубли
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+    public List<string> MiniBlocks { get; set; } = DefaultMiniBlocks.ToList();
+    private static readonly string[] DefaultMiniBlocks = { "story", "daily", "fate", "target", "hunt", "timers" };
     public Dictionary<string, float> SplitRatios { get; set; } = new();
     public bool SetupDone { get; set; }
     public DateTime? HouseWarned { get; set; }
@@ -82,4 +92,27 @@ public sealed class Configuration : IPluginConfiguration
     public bool DutyOverlay { get; set; } = true;
 
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
+
+    /// <summary>Чинит конфиги старых версий, где плитки обзора и блоки мини-окна задублировались.</summary>
+    public void Repair()
+    {
+        var tiles = StripDefaults(HomeTiles, DefaultHomeTiles);
+        var blocks = StripDefaults(MiniBlocks, DefaultMiniBlocks);
+        if (tiles.SequenceEqual(HomeTiles) && blocks.SequenceEqual(MiniBlocks)) return;
+        HomeTiles = tiles;
+        MiniBlocks = blocks;
+        Save();
+    }
+
+    /// <summary>
+    /// Старый загрузчик дописывал сохранённый список к списку по умолчанию: «умолчания + умолчания + … + настоящий список».
+    /// Срезаем копии умолчаний в начале, затем убираем оставшиеся повторы.
+    /// </summary>
+    private static List<string> StripDefaults(List<string> list, string[] defaults)
+    {
+        var res = list.ToList();
+        while (res.Count > defaults.Length && res.Take(defaults.Length).SequenceEqual(defaults))
+            res.RemoveRange(0, defaults.Length);
+        return res.Distinct().ToList();
+    }
 }
