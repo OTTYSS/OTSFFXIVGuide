@@ -127,7 +127,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Commands.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | patch | mentor | side | farm | housing | fish | blu | target | peek | mini | overlay | settings",
+            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | patch | mentor | side | farm | housing | lvl | aether | faux | carnivale | clan | squadron | trove | fish | blu | target | peek | mini | overlay | settings",
         });
 
         PluginInterface.UiBuilder.Draw += windows.Draw;
@@ -224,6 +224,13 @@ public sealed class Plugin : IDalamudPlugin
             "bis" => MainTab.Bis,
             "mounts" or "маунты" => MainTab.Mounts,
             "housing" or "plots" or "участки" or "жильё" or "жилье" => MainTab.Housing,
+            "lvl" or "levelcraft" or "прокачка" => MainTab.LevelPlanner,
+            "aether" or "currents" or "течения" or "кристаллы" => MainTab.Aether,
+            "faux" or "hollows" => MainTab.FauxHollows,
+            "carnivale" or "аоз" or "aoz" => MainTab.Carnivale,
+            "clan" or "bills" or "клан" => MainTab.ClanHunt,
+            "squadron" or "сквадрон" => MainTab.Squadron,
+            "trove" or "tomes" => MainTab.Trove,
             "farm" or "фарм" => MainTab.MountFarm,
             "furniture" or "мебель" => MainTab.Furniture,
             "ventures" or "вылазки" => MainTab.Ventures,

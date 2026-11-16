@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor, SideStories, Mounts, Housing }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor, SideStories, Mounts, Housing, LevelPlanner, Aether, FauxHollows, Carnivale, ClanHunt, Squadron, Trove }
 
 public sealed class MainWindow : Window
 {
@@ -78,11 +78,16 @@ public sealed class MainWindow : Window
             (MainTab.Hunt, FontAwesomeIcon.Crosshairs, "Hunt-марки"),
             (MainTab.SRanks, FontAwesomeIcon.Skull, "S-ранги"),
             (MainTab.HuntingLog, FontAwesomeIcon.Book, "Hunting Log"),
+            (MainTab.ClanHunt, FontAwesomeIcon.Scroll, "Клановая охота"),
             (MainTab.Sightseeing, FontAwesomeIcon.Binoculars, "Виды (Sightseeing)"),
             (MainTab.Leves, FontAwesomeIcon.ClipboardList, "Левы"),
             (MainTab.Treasure, FontAwesomeIcon.Gift, "Карты сокровищ"),
             (MainTab.Ocean, FontAwesomeIcon.Water, "Океан"),
             (MainTab.GoldSaucer, FontAwesomeIcon.Dice, "Gold Saucer"),
+            (MainTab.FauxHollows, FontAwesomeIcon.ThLarge, "Faux Hollows"),
+            (MainTab.Carnivale, FontAwesomeIcon.TheaterMasks, "Masked Carnivale"),
+            (MainTab.Squadron, FontAwesomeIcon.Users, "Сквадроны"),
+            (MainTab.Trove, FontAwesomeIcon.Gem, "Treasure Trove"),
             (MainTab.Island, FontAwesomeIcon.Umbrella, "Остров"),
             (MainTab.ChocoboGarden, FontAwesomeIcon.Seedling, "Чокобо и сад"),
             (MainTab.Tribes, FontAwesomeIcon.Handshake, "Племена"),
@@ -100,6 +105,7 @@ public sealed class MainWindow : Window
             (MainTab.Collections, FontAwesomeIcon.Paw, "Коллекции"),
             (MainTab.MountFarm, FontAwesomeIcon.Dungeon, "Фарм коллекций"),
             (MainTab.Unlocks, FontAwesomeIcon.Unlock, "Разблокировки"),
+            (MainTab.Aether, FontAwesomeIcon.Wind, "Кристаллы и течения"),
             (MainTab.Glamour, FontAwesomeIcon.Tshirt, "Гламур"),
         }),
         new("Экономика", FontAwesomeIcon.Coins, new[]
@@ -108,6 +114,7 @@ public sealed class MainWindow : Window
             (MainTab.Currencies, FontAwesomeIcon.Coins, "Валюты"),
             (MainTab.Shopping, FontAwesomeIcon.ShoppingCart, "Покупки"),
             (MainTab.Craft, FontAwesomeIcon.Hammer, "Крафт"),
+            (MainTab.LevelPlanner, FontAwesomeIcon.ChartLine, "Прокачка ремесла и сбора"),
             (MainTab.RecipeBooks, FontAwesomeIcon.BookOpen, "Книги рецептов"),
             (MainTab.Cosmic, FontAwesomeIcon.Rocket, "Cosmic Exploration"),
             (MainTab.Gather, FontAwesomeIcon.Leaf, "Сбор"),
@@ -170,6 +177,8 @@ public sealed class MainWindow : Window
         patch = new PatchTab();
         mentor = new MentorTab();
         housing = new HousingTab();
+        levelPlanner = new LevelPlannerTab(market);
+        clanHunt = new ClanHuntTab(name => { bestiary!.SetSearch(name); current = MainTab.Bestiary; });
         recipeBooks = new RecipeBooksTab(market);
         pvp = new PvPTab();
         variant = new VariantTab(data);
@@ -285,6 +294,13 @@ public sealed class MainWindow : Window
     private readonly PatchTab patch;
     private readonly MentorTab mentor;
     private readonly HousingTab housing;
+    private readonly LevelPlannerTab levelPlanner;
+    private readonly AetherTab aether = new();
+    private readonly FauxHollowsTab fauxHollows = new();
+    private readonly CarnivaleTab carnivale = new();
+    private readonly ClanHuntTab clanHunt;
+    private readonly SquadronTab squadron = new();
+    private readonly TroveTab trove = new();
     private readonly RecipeBooksTab recipeBooks;
     private readonly PvPTab pvp;
     private readonly VariantTab variant;
@@ -675,7 +691,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.20");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.21");
         }
 
         ImGui.EndChild();
@@ -981,6 +997,13 @@ public sealed class MainWindow : Window
             case MainTab.Patch: patch.Draw(); break;
             case MainTab.Mentor: mentor.Draw(); break;
             case MainTab.Housing: housing.Draw(); break;
+            case MainTab.LevelPlanner: Scrolled("lp", levelPlanner.Draw); break;
+            case MainTab.Aether: aether.Draw(); break;
+            case MainTab.FauxHollows: Scrolled("fh", fauxHollows.Draw); break;
+            case MainTab.Carnivale: carnivale.Draw(); break;
+            case MainTab.ClanHunt: Scrolled("ch", clanHunt.Draw); break;
+            case MainTab.Squadron: Scrolled("sq", squadron.Draw); break;
+            case MainTab.Trove: Scrolled("mt", trove.Draw); break;
             case MainTab.RecipeBooks: recipeBooks.Draw(); break;
             case MainTab.PvP: Scrolled("pvp", pvp.Draw); break;
             case MainTab.Variant: variant.Draw(); break;
