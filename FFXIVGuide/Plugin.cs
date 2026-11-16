@@ -127,7 +127,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Commands.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | patch | mentor | side | farm | housing | lvl | aether | faux | carnivale | clan | squadron | trove | ishgard | repair | minigames | fish | blu | target | peek | mini | overlay | settings",
+            HelpMessage = "Открыть справочник. /fguide <что искать> | story | duties | quests | items | gear | inv | daily | craft | hunt | collect | level | fate | gather | recap | deep | treasure | build | diary | ach | mob | wiki | timers | weather | saucer | tribes | glam | shop | subs | island | scrips | relic | ocean | unlocks | events | bis | mounts | furniture | ventures | raid | occult | currency | status | jobs | leves | srank | desynth | chocobo | fashion | bingo | progress | books | pvp | variant | cosmic | vistas | huntlog | dyes | patch | mentor | side | farm | housing | lvl | aether | faux | carnivale | clan | squadron | trove | ishgard | repair | minigames | gc | doman | buddy | fc | fish | blu | target | peek | mini | overlay | settings",
         });
 
         PluginInterface.UiBuilder.Draw += windows.Draw;
@@ -238,6 +238,10 @@ public sealed class Plugin : IDalamudPlugin
             "ishgard" or "diadem" or "ишгард" => MainTab.Ishgard,
             "repair" or "materia" or "food" or "износ" or "еда" => MainTab.GearState,
             "minigames" or "racing" or "verminion" or "mahjong" => MainTab.MiniGames,
+            "gc" or "seals" or "печати" => MainTab.GcRank,
+            "doman" or "enclave" => MainTab.Doman,
+            "buddy" or "companion" or "чокобо" => MainTab.Companion,
+            "fc" or "fcactions" => MainTab.FcActions,
             "farm" or "фарм" => MainTab.MountFarm,
             "furniture" or "мебель" => MainTab.Furniture,
             "ventures" or "вылазки" => MainTab.Ventures,

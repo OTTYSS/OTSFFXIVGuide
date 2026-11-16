@@ -9,7 +9,7 @@ using FFXIVGuide.Data;
 
 namespace FFXIVGuide.Windows;
 
-public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor, SideStories, Mounts, Housing, LevelPlanner, Aether, FauxHollows, Carnivale, ClanHunt, Squadron, Trove, Ishgard, GearState, MiniGames }
+public enum MainTab { Home, Search, Story, Duties, Quests, Items, Gear, Inventory, Checklist, Craft, Hunt, Collections, Settings, Leveling, Fates, Gather, Recap, Deep, Treasure, Build, Diary, Achievements, Bestiary, Wiki, Weather, Timers, GoldSaucer, Tribes, Glamour, Shopping, Voyages, Island, CollectableItems, Relics, Ocean, Unlocks, Weekly, Bis, MountFarm, Furniture, Ventures, Occult, Currencies, Statuses, Jobs, Leves, SRanks, Salvage, ChocoboGarden, Progress, RecipeBooks, PvP, Variant, Cosmic, Sightseeing, HuntingLog, Dyes, Patch, Mentor, SideStories, Mounts, Housing, LevelPlanner, Aether, FauxHollows, Carnivale, ClanHunt, Squadron, Trove, Ishgard, GearState, MiniGames, GcRank, Doman, Companion, FcActions }
 
 public sealed class MainWindow : Window
 {
@@ -98,6 +98,9 @@ public sealed class MainWindow : Window
         {
             (MainTab.Gear, FontAwesomeIcon.ShieldAlt, "Экипировка"),
             (MainTab.GearState, FontAwesomeIcon.Wrench, "Износ, материя и еда"),
+            (MainTab.GcRank, FontAwesomeIcon.Flag, "Ранги Grand Company"),
+            (MainTab.Companion, FontAwesomeIcon.Feather, "Чокобо-компаньон"),
+            (MainTab.FcActions, FontAwesomeIcon.Users, "Действия FC"),
             (MainTab.Bis, FontAwesomeIcon.Star, "BiS-сеты"),
             (MainTab.Build, FontAwesomeIcon.Flask, "Материя и еда"),
             (MainTab.Leveling, FontAwesomeIcon.ArrowCircleUp, "Прокачка"),
@@ -118,6 +121,7 @@ public sealed class MainWindow : Window
             (MainTab.Craft, FontAwesomeIcon.Hammer, "Крафт"),
             (MainTab.LevelPlanner, FontAwesomeIcon.ChartLine, "Прокачка ремесла и сбора"),
             (MainTab.Ishgard, FontAwesomeIcon.Cloud, "Ishgard Restoration и Diadem"),
+            (MainTab.Doman, FontAwesomeIcon.Landmark, "Doman Enclave"),
             (MainTab.RecipeBooks, FontAwesomeIcon.BookOpen, "Книги рецептов"),
             (MainTab.Cosmic, FontAwesomeIcon.Rocket, "Cosmic Exploration"),
             (MainTab.Gather, FontAwesomeIcon.Leaf, "Сбор"),
@@ -181,6 +185,7 @@ public sealed class MainWindow : Window
         mentor = new MentorTab();
         housing = new HousingTab();
         levelPlanner = new LevelPlannerTab(market);
+        doman = new DomanTab(market);
         clanHunt = new ClanHuntTab(name => { bestiary!.SetSearch(name); current = MainTab.Bestiary; });
         recipeBooks = new RecipeBooksTab(market);
         pvp = new PvPTab();
@@ -307,6 +312,10 @@ public sealed class MainWindow : Window
     private readonly IshgardTab ishgard = new();
     private readonly GearStateTab gearState = new();
     private readonly MiniGamesTab miniGames = new();
+    private readonly GcRankTab gcRank = new();
+    private readonly DomanTab doman;
+    private readonly CompanionTab companion = new();
+    private readonly FcActionsTab fcActions = new();
     private readonly RecipeBooksTab recipeBooks;
     private readonly PvPTab pvp;
     private readonly VariantTab variant;
@@ -697,7 +706,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.22");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.23");
         }
 
         ImGui.EndChild();
@@ -1013,6 +1022,10 @@ public sealed class MainWindow : Window
             case MainTab.Ishgard: Scrolled("ish", ishgard.Draw); break;
             case MainTab.GearState: Scrolled("gs", gearState.Draw); break;
             case MainTab.MiniGames: Scrolled("mg", miniGames.Draw); break;
+            case MainTab.GcRank: Scrolled("gcr", gcRank.Draw); break;
+            case MainTab.Doman: Scrolled("dom", doman.Draw); break;
+            case MainTab.Companion: Scrolled("cmp", companion.Draw); break;
+            case MainTab.FcActions: Scrolled("fca", fcActions.Draw); break;
             case MainTab.RecipeBooks: recipeBooks.Draw(); break;
             case MainTab.PvP: Scrolled("pvp", pvp.Draw); break;
             case MainTab.Variant: variant.Draw(); break;

@@ -11,7 +11,7 @@ namespace FFXIVGuide;
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 2;
 
     // Общее
     public MainTab StartTab { get; set; } = MainTab.Home;
@@ -50,7 +50,9 @@ public sealed class Configuration : IPluginConfiguration
     public bool NotifyVoyages { get; set; } = true;
     public List<uint> DresserItems { get; set; } = new();
     /// <summary>Подсказка при наведении на предмет в игре: 0 — выкл, 1 — с Shift, 2 — всегда.</summary>
-    public int ItemPeekMode { get; set; } = 1;
+    public int ItemPeekMode { get; set; } = 2;
+    /// <summary>С зажатым Shift прятать игровую подсказку предмета и показывать вместо неё полную карточку.</summary>
+    public bool ItemPeekReplace { get; set; } = true;
     public bool MiniShowTarget { get; set; } = true;
 
     // Инвентарь
@@ -126,6 +128,13 @@ public sealed class Configuration : IPluginConfiguration
     /// <summary>Чинит конфиги старых версий, где плитки обзора и блоки мини-окна задублировались.</summary>
     public void Repair()
     {
+        // v2.24: подсказка предмета по умолчанию всегда (карточка вместо игровой подсказки)
+        if (Version < 2)
+        {
+            if (ItemPeekMode == 1) ItemPeekMode = 2;
+            Version = 2;
+            Save();
+        }
         var tiles = StripDefaults(HomeTiles, DefaultHomeTiles);
         var blocks = StripDefaults(MiniBlocks, DefaultMiniBlocks);
         if (tiles.SequenceEqual(HomeTiles) && blocks.SequenceEqual(MiniBlocks)) return;

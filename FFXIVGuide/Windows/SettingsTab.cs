@@ -50,6 +50,8 @@ internal sealed class SettingsTab
             if (ImGui.Combo("Подсказка при наведении на предмет в игре", ref peek, "Выключена\0С зажатым Shift\0Всегда\0"))
             { cfg.ItemPeekMode = peek; changed = true; }
             ImGui.TextColored(Theme.Gray, "Где взять, на что меняется, цена. Полная карточка: /fguide peek");
+            var rep = cfg.ItemPeekReplace;
+            if (ImGui.Checkbox("Заменять игровую подсказку предмета полной карточкой", ref rep)) { cfg.ItemPeekReplace = rep; changed = true; }
 
 
             var hl = cfg.HighlightInGame;
