@@ -11,32 +11,24 @@ using Lumina.Excel.Sheets;
 
 namespace FFXIVGuide.Windows;
 
-/// <summary>FATE текущей зоны и прогресс атэритов (Aether Currents) по зонам.</summary>
+/// <summary>FATE в текущей зоне. Течения эфира и полёт — во вкладке «Кристаллы и течения».</summary>
 internal sealed class FateTab
 {
-    private static readonly string[] Parts = { "FATE в зоне", "Атэриты (полёт)" };
-    private int part;
-    private bool onlyMissing = true;
-
     public void Draw()
     {
-        Theme.Header("FATE и атэриты", "Активные FATE рядом и сколько Aether Currents собрано для полёта");
+        Theme.Header("FATE", "Активные FATE рядом: что идёт, сколько осталось и что дают");
         if (!PlayerInfo.Ready)
         {
             Theme.NeedLogin("Зайди в игру персонажем: данные этого раздела берутся прямо из игры.");
             return;
         }
-
-        Theme.Chips("fpart", Parts, ref part);
         if (!ImGui.BeginChild("##fate", Vector2.Zero))
         {
             ImGui.EndChild();
             return;
         }
-
-        if (part == 0) DrawFates();
-        else DrawCurrents();
-
+        DrawFates();
+        ImGui.TextColored(Theme.Gray, "Течения эфира и полёт по зонам — во вкладке «Кристаллы и течения» (Персонаж).");
         ImGui.EndChild();
     }
 
@@ -88,40 +80,4 @@ internal sealed class FateTab
         });
     }
 
-    private void DrawCurrents()
-    {
-        var unlocks = Plugin.Unlocks;
-        var currentTerr = Plugin.ClientState.TerritoryType;
-        ImGui.Checkbox("Только зоны, где собрано не всё", ref onlyMissing);
-
-        foreach (var set in Plugin.Data.GetExcelSheet<AetherCurrentCompFlgSet>())
-        {
-            var terr = set.Territory.ValueNullable;
-            if (terr is null || set.Territory.RowId == 0) continue;
-            var zone = terr.Value.PlaceName.ValueNullable?.Name.ExtractText() ?? "";
-            if (zone.Length == 0) continue;
-
-            var currents = set.AetherCurrents.Where(c => c.RowId != 0 && c.ValueNullable is not null).Select(c => c.Value).ToList();
-            if (currents.Count == 0) continue;
-            var have = currents.Count(c => unlocks.IsAetherCurrentUnlocked(c));
-            if (onlyMissing && have == currents.Count) continue;
-
-            var here = set.Territory.RowId == currentTerr;
-            Theme.Panel($"ac{set.RowId}", () =>
-            {
-                Theme.Progress(here ? $"{zone} (ты здесь)" : zone, have, currents.Count, have == currents.Count ? Theme.Green : here ? Theme.Gold : Theme.Blue);
-                var missingQuests = currents.Where(c => !unlocks.IsAetherCurrentUnlocked(c) && c.Quest.RowId != 0)
-                    .Select(c => c.Quest.ValueNullable?.Name.ExtractText() ?? "").Where(n => n.Length > 0).ToList();
-                var missingField = currents.Count(c => !unlocks.IsAetherCurrentUnlocked(c) && c.Quest.RowId == 0);
-                if (missingField > 0)
-                    ImGui.TextColored(Theme.TextDim, $"В поле осталось найти: {missingField} (синие точки, видны рядом)");
-                foreach (var q in missingQuests)
-                {
-                    Theme.FaIcon(FontAwesomeIcon.Scroll, Theme.GoldDim);
-                    ImGui.SameLine();
-                    ImGui.TextColored(Theme.Text, $"Квест: {q}");
-                }
-            });
-        }
-    }
 }

@@ -74,43 +74,37 @@ public sealed class MainWindow : Window
         }),
         new("Активности", FontAwesomeIcon.Fire, new[]
         {
-            (MainTab.Fates, FontAwesomeIcon.Fire, "FATE и атэриты"),
-            (MainTab.Hunt, FontAwesomeIcon.Crosshairs, "Hunt-марки"),
-            (MainTab.SRanks, FontAwesomeIcon.Skull, "S-ранги"),
+            (MainTab.Fates, FontAwesomeIcon.Fire, "FATE"),
+            (MainTab.Hunt, FontAwesomeIcon.Crosshairs, "Охота: марки, S-ранги, клановая"),
             (MainTab.HuntingLog, FontAwesomeIcon.Book, "Hunting Log"),
-            (MainTab.ClanHunt, FontAwesomeIcon.Scroll, "Клановая охота"),
             (MainTab.Sightseeing, FontAwesomeIcon.Binoculars, "Виды (Sightseeing)"),
             (MainTab.Leves, FontAwesomeIcon.ClipboardList, "Левы"),
             (MainTab.Treasure, FontAwesomeIcon.Gift, "Карты сокровищ"),
             (MainTab.Ocean, FontAwesomeIcon.Water, "Океан"),
-            (MainTab.GoldSaucer, FontAwesomeIcon.Dice, "Gold Saucer"),
-            (MainTab.MiniGames, FontAwesomeIcon.Gamepad, "Мини-игры Gold Saucer"),
+            (MainTab.GoldSaucer, FontAwesomeIcon.Dice, "Gold Saucer и мини-игры"),
             (MainTab.FauxHollows, FontAwesomeIcon.ThLarge, "Faux Hollows"),
             (MainTab.Carnivale, FontAwesomeIcon.TheaterMasks, "Masked Carnivale"),
             (MainTab.Squadron, FontAwesomeIcon.Users, "Сквадроны"),
             (MainTab.Trove, FontAwesomeIcon.Gem, "Treasure Trove"),
             (MainTab.Island, FontAwesomeIcon.Umbrella, "Остров"),
-            (MainTab.ChocoboGarden, FontAwesomeIcon.Seedling, "Чокобо и сад"),
+            (MainTab.ChocoboGarden, FontAwesomeIcon.Feather, "Чокобо: компаньон и сад"),
             (MainTab.Tribes, FontAwesomeIcon.Handshake, "Племена"),
             (MainTab.Weekly, FontAwesomeIcon.CalendarCheck, "Рейды, события, поставки"),
         }),
         new("Персонаж", FontAwesomeIcon.ShieldAlt, new[]
         {
             (MainTab.Gear, FontAwesomeIcon.ShieldAlt, "Экипировка"),
-            (MainTab.GearState, FontAwesomeIcon.Wrench, "Износ, материя и еда"),
+            (MainTab.GearState, FontAwesomeIcon.Wrench, "Износ и духовная связь"),
             (MainTab.GcRank, FontAwesomeIcon.Flag, "Ранги Grand Company"),
-            (MainTab.Companion, FontAwesomeIcon.Feather, "Чокобо-компаньон"),
             (MainTab.FcActions, FontAwesomeIcon.Users, "Действия FC"),
             (MainTab.Bis, FontAwesomeIcon.Star, "BiS-сеты"),
             (MainTab.Build, FontAwesomeIcon.Flask, "Материя и еда"),
-            (MainTab.Leveling, FontAwesomeIcon.ArrowCircleUp, "Прокачка"),
-            (MainTab.ExpBonus, FontAwesomeIcon.AngleDoubleUp, "Бонусы опыта"),
+            (MainTab.Leveling, FontAwesomeIcon.ArrowCircleUp, "Прокачка и бонусы опыта"),
             (MainTab.Achievements, FontAwesomeIcon.Trophy, "Достижения"),
             (MainTab.Diary, FontAwesomeIcon.ChartLine, "Дневник"),
             (MainTab.Mounts, FontAwesomeIcon.Horse, "Маунты"),
             (MainTab.Collections, FontAwesomeIcon.Paw, "Коллекции"),
             (MainTab.MountFarm, FontAwesomeIcon.Dungeon, "Фарм коллекций"),
-            (MainTab.Unlocks, FontAwesomeIcon.Unlock, "Разблокировки"),
             (MainTab.Aether, FontAwesomeIcon.Wind, "Кристаллы и течения"),
             (MainTab.Glamour, FontAwesomeIcon.Tshirt, "Гламур"),
         }),
@@ -190,6 +184,12 @@ public sealed class MainWindow : Window
         doman = new DomanTab(market);
         retainerMarket = new RetainerMarketTab(market);
         clanHunt = new ClanHuntTab(name => { bestiary!.SetSearch(name); current = MainTab.Bestiary; });
+        levelingAll = new CombinedTab("Прокачка", "Что делать на твоём уровне и что сейчас добавляет опыт",
+            ("Что делать", () => leveling!.Draw()), ("Бонусы опыта", () => expBonus.Draw()));
+        huntAll = new CombinedTab("Охота", "Марки рядом, S-ранги и клановая охота",
+            ("Марки рядом", () => Scrolled("hunt", hunt!.Draw)), ("S-ранги", () => sranks.Draw()), ("Клановая охота", () => Scrolled("ch", clanHunt.Draw)));
+        chocoboAll = new CombinedTab("Чокобо", "Боевой чокобо-компаньон, окраска и сад",
+            ("Компаньон", () => Scrolled("cmp", companion.Draw)), ("Окраска и сад", () => chocoGarden.Draw()));
         recipeBooks = new RecipeBooksTab(market);
         pvp = new PvPTab();
         variant = new VariantTab(data);
@@ -217,6 +217,7 @@ public sealed class MainWindow : Window
         craft = new CraftTab(market);
         hunt = new HuntTab(hunts);
         collections = new CollectionsTab(data);
+        collections.Go = Go;
         leveling = new LevelingTab(data, quests, duties);
         gather = new GatherTab(market);
         build = new BuildTab(market);
@@ -286,7 +287,6 @@ public sealed class MainWindow : Window
     private readonly CollectablesTab collectables = new();
     private readonly RelicTab relics;
     private readonly OceanTab ocean = new();
-    private readonly UnlocksTab unlocks = new();
     private readonly WeeklyTab weekly;
     private readonly BisTab bis = new();
     private readonly MountFarmTab mountFarm;
@@ -314,13 +314,27 @@ public sealed class MainWindow : Window
     private readonly TroveTab trove = new();
     private readonly IshgardTab ishgard = new();
     private readonly GearStateTab gearState = new();
-    private readonly MiniGamesTab miniGames = new();
     private readonly GcRankTab gcRank = new();
     private readonly DomanTab doman;
     private readonly CompanionTab companion = new();
     private readonly FcActionsTab fcActions = new();
     private readonly ExpBonusTab expBonus = new();
     private readonly RetainerMarketTab retainerMarket;
+    private CombinedTab? levelingAll, huntAll, chocoboAll;
+
+    /// <summary>Старые вкладки, вошедшие в объединённые: куда вести и какой раздел открыть.</summary>
+    private void Redirect()
+    {
+        switch (current)
+        {
+            case MainTab.Unlocks: current = MainTab.Collections; break;
+            case MainTab.MiniGames: current = MainTab.GoldSaucer; goldSaucer.ShowSection(4); break;
+            case MainTab.ExpBonus: current = MainTab.Leveling; levelingAll?.Show(1); break;
+            case MainTab.Companion: current = MainTab.ChocoboGarden; chocoboAll?.Show(0); break;
+            case MainTab.SRanks: current = MainTab.Hunt; huntAll?.Show(1); break;
+            case MainTab.ClanHunt: current = MainTab.Hunt; huntAll?.Show(2); break;
+        }
+    }
     private readonly RecipeBooksTab recipeBooks;
     private readonly PvPTab pvp;
     private readonly VariantTab variant;
@@ -458,6 +472,7 @@ public sealed class MainWindow : Window
             quests.EndFrame();
         }
 
+        Redirect();
         var io = ImGui.GetIO();
         // Esc в открытом выпадающем списке или меню закрывает только его
         Theme.BeginEsc(ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && !palette.IsOpen && !io.WantTextInput
@@ -711,7 +726,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.26");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.27");
         }
 
         ImGui.EndChild();
@@ -973,10 +988,10 @@ public sealed class MainWindow : Window
             case MainTab.Inventory: inventory.Draw(); break;
             case MainTab.Checklist: checklist.Draw(); break;
             case MainTab.Craft: craft.Draw(); break;
-            case MainTab.Hunt: Scrolled("hunt", hunt.Draw); break;
+            case MainTab.Hunt: huntAll!.Draw(); break;
             case MainTab.Collections: collections.Draw(); break;
             case MainTab.Settings: settings.Draw(); break;
-            case MainTab.Leveling: leveling.Draw(); break;
+            case MainTab.Leveling: levelingAll!.Draw(); break;
             case MainTab.Fates: fates.Draw(); break;
             case MainTab.Gather: gather.Draw(); break;
             case MainTab.Recap: recap.Draw(); break;
@@ -998,7 +1013,6 @@ public sealed class MainWindow : Window
             case MainTab.CollectableItems: collectables.Draw(); break;
             case MainTab.Relics: relics.Draw(); break;
             case MainTab.Ocean: ocean.Draw(); break;
-            case MainTab.Unlocks: unlocks.Draw(); break;
             case MainTab.Weekly: weekly.Draw(); break;
             case MainTab.Bis: bis.Draw(); break;
             case MainTab.MountFarm: mountFarm.Draw(); break;
@@ -1010,9 +1024,8 @@ public sealed class MainWindow : Window
             case MainTab.Statuses: statuses.Draw(); break;
             case MainTab.Jobs: jobsTab.Draw(); break;
             case MainTab.Leves: leves.Draw(); break;
-            case MainTab.SRanks: sranks.Draw(); break;
             case MainTab.Salvage: salvage.Draw(); break;
-            case MainTab.ChocoboGarden: chocoGarden.Draw(); break;
+            case MainTab.ChocoboGarden: chocoboAll!.Draw(); break;
             case MainTab.Progress: progress.Draw(); break;
             case MainTab.Patch: patch.Draw(); break;
             case MainTab.Mentor: mentor.Draw(); break;
@@ -1021,17 +1034,13 @@ public sealed class MainWindow : Window
             case MainTab.Aether: aether.Draw(); break;
             case MainTab.FauxHollows: Scrolled("fh", fauxHollows.Draw); break;
             case MainTab.Carnivale: carnivale.Draw(); break;
-            case MainTab.ClanHunt: Scrolled("ch", clanHunt.Draw); break;
             case MainTab.Squadron: Scrolled("sq", squadron.Draw); break;
             case MainTab.Trove: Scrolled("mt", trove.Draw); break;
             case MainTab.Ishgard: Scrolled("ish", ishgard.Draw); break;
             case MainTab.GearState: Scrolled("gs", gearState.Draw); break;
-            case MainTab.MiniGames: Scrolled("mg", miniGames.Draw); break;
             case MainTab.GcRank: Scrolled("gcr", gcRank.Draw); break;
             case MainTab.Doman: Scrolled("dom", doman.Draw); break;
-            case MainTab.Companion: Scrolled("cmp", companion.Draw); break;
             case MainTab.FcActions: Scrolled("fca", fcActions.Draw); break;
-            case MainTab.ExpBonus: Scrolled("eb", expBonus.Draw); break;
             case MainTab.RetainerMarket: Scrolled("rm", retainerMarket.Draw); break;
             case MainTab.RecipeBooks: recipeBooks.Draw(); break;
             case MainTab.PvP: Scrolled("pvp", pvp.Draw); break;

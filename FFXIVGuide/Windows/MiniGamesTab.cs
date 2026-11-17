@@ -59,10 +59,10 @@ internal sealed class MiniGamesTab
         "Для начала хватит режима против NPC.",
     };
 
-    public unsafe void Draw()
+    /// <summary>Раздел одной мини-игры (вызывается из вкладки «Gold Saucer»): 0 — гонки чокобо, 1 — Lord of Verminion, 2 — маджонг.</summary>
+    public unsafe void DrawGame(int which)
     {
-        Theme.Header("Мини-игры Gold Saucer", "Гоночный чокобо, Lord of Verminion и Doman Mahjong: правила коротко, прогресс и достижения");
-        Theme.Chips("mggame", Games, ref game);
+        game = Math.Clamp(which, 0, Games.Length - 1);
         Theme.Panel("mgrules", () => ImGui.TextColored(Theme.TextDim, Rules[game]));
 
         if (game == 0 && PlayerInfo.Ready)

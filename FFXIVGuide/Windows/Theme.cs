@@ -300,8 +300,12 @@ internal static class Theme
     }
 
     /// <summary>Заголовок раздела: крупный текст + серый подзаголовок.</summary>
+    /// <summary>Внутри объединённой вкладки заголовки разделов не рисуются (заголовок один — у общей вкладки).</summary>
+    public static bool SuppressHeader { get; set; }
+
     public static void Header(string title, string subtitle)
     {
+        if (SuppressHeader) return;
         var start = ImGui.GetCursorScreenPos();
         ImGui.PushFont(UiBuilder.IconFont);
         var iconStr = CurrentIcon.ToIconString();

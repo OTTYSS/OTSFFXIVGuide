@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using FFXIVGuide.Data;
 using Lumina.Excel.Sheets;
 
@@ -34,6 +35,26 @@ internal sealed class CollectionsTab
     // Тип действия предмета (ItemAction.Action), который открывает коллекцию
     private const uint ActionMount = 1322, ActionMinion = 853, ActionOrchestrion = 25183, ActionCard = 3357,
         ActionBarding = 1013, ActionOrnament = 20086, ActionGlasses = 37312, ActionFramersKit = 29459;
+
+    /// <summary>Переход в другую вкладку (маунты смотрим в своей вкладке).</summary>
+    public Action<MainTab>? Go { get; set; }
+
+    private const uint ActionMasterRecipe = 2136, ActionFolklore = 4107;
+
+    /// <summary>Эмоции: открываются квестами, предметами, событиями и магазинами.</summary>
+    private static List<Entry> LoadEmotes()
+    {
+        var questEmote = Plugin.Data.GetExcelSheet<Quest>().Where(q => q.EmoteReward.RowId != 0)
+            .GroupBy(q => q.EmoteReward.RowId).ToDictionary(g => g.Key, g => "Квест: " + g.First().Name.ExtractText());
+        return Plugin.Data.GetExcelSheet<Emote>()
+            .Where(e => e.UnlockLink != 0 && e.Name.ExtractText().Length > 0)
+            .Select(e =>
+            {
+                var cmd = e.TextCommand.ValueNullable?.Command.ExtractText() ?? "";
+                var src = questEmote.GetValueOrDefault(e.RowId) ?? "предмет, событие или магазин";
+                return new Entry(e.RowId, e.Name.ExtractText(), e.Icon, 0, (cmd.Length > 0 ? cmd + " · " : "") + src);
+            }).ToList();
+    }
 
     public CollectionsTab(GuideData data)
     {
@@ -89,9 +110,17 @@ internal sealed class CollectionsTab
                     .Select(m => new Entry(m.RowId, GuideData.Capitalize(m.Singular.ExtractText()), m.Icon, ItemFor(ActionOrnament, m.RowId))).ToList(),
                 Unlocked = id => Plugin.Data.GetExcelSheet<Ornament>().GetRowOrDefault(id) is { } r && u.IsOrnamentUnlocked(r),
             },
+            new Kind
+            {
+                Title = "Эмоции",
+                Load = LoadEmotes,
+                Unlocked = id => Plugin.Data.GetExcelSheet<Emote>().GetRowOrDefault(id) is { } r && u.IsEmoteUnlocked(r),
+            },
             ItemKind("Причёски и раскраска", HairstyleItems, HairPreviewIcon),
             ItemKind("Очки", () => ItemsWithAction(ActionGlasses), GlassesIcon),
             ItemKind("Framer's kits", () => ItemsWithAction(ActionFramersKit), KitIcon),
+            ItemKind("Книги мастер-рецептов", () => ItemsWithAction(ActionMasterRecipe)),
+            ItemKind("Книги фольклора (сбор)", () => ItemsWithAction(ActionFolklore)),
             new Kind
             {
                 Title = "Титулы",
@@ -308,6 +337,13 @@ internal sealed class CollectionsTab
 
         var kind = kinds[kindIdx];
         kind.Entries ??= kind.Load();
+        if (kind.Title == "Маунты" && Go is not null)
+        {
+            // Полный список маунтов — в своей вкладке (источники, картинки, места, музыка)
+            Theme.EmptyState(FontAwesomeIcon.Horse, "Маунты — в отдельной вкладке",
+                "Там все маунты с картинками, способом получения, числом мест и фильтрами.", "Открыть «Маунты»", () => Go(MainTab.Mounts));
+            return;
+        }
 
         Theme.Chips("cshow", ShowNames, ref show);
         Theme.Search("##csearch", $"Поиск: {kind.Title.ToLowerInvariant()}…", ref search);

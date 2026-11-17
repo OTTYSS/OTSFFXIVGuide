@@ -12,7 +12,7 @@ internal sealed class GearStateTab
 {
     public void Draw()
     {
-        Theme.Header("Износ, материя и еда", "Прочность снаряжения, что можно извлечь в материю и есть ли на тебе еда — плюс напоминания");
+        Theme.Header("Износ и духовная связь", "Прочность снаряжения, что можно извлечь в материю, еда — и напоминания об этом");
         if (!PlayerInfo.Ready) { Theme.NeedLogin("Зайди в игру персонажем: снаряжение и эффекты берутся из игры."); return; }
         var cfg = Plugin.Config;
         var gear = Watchers.ReadGear(true);

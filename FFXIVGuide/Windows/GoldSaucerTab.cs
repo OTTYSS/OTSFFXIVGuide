@@ -15,12 +15,16 @@ namespace FFXIVGuide.Windows;
 /// <summary>Gold Saucer: подсказчик Mini Cactpot и справочник Triple Triad. Только подсказывает.</summary>
 internal sealed unsafe class GoldSaucerTab
 {
-    private static readonly string[] Sections = { "Mini Cactpot", "Fashion Report", "Карты Triple Triad", "Противники Triple Triad" };
+    private static readonly string[] Sections = { "Mini Cactpot", "Fashion Report", "Карты Triple Triad", "Противники Triple Triad", "Гонки чокобо", "Lord of Verminion", "Маджонг" };
     private int section;
+    private readonly MiniGamesTab miniGames = new();
+
+    /// <summary>Открыть сразу нужный раздел (для старых команд и ссылок).</summary>
+    public void ShowSection(int s) => section = Math.Clamp(s, 0, Sections.Length - 1);
 
     public void Draw()
     {
-        Theme.Header("Gold Saucer", "Mini Cactpot: какую клетку открыть и какую линию выбрать. Triple Triad: карты и у кого их выиграть.");
+        Theme.Header("Gold Saucer", "Mini Cactpot, Fashion Report, Triple Triad, гонки чокобо, Lord of Verminion и маджонг — подсказки, прогресс и достижения");
         Theme.Chips("gssec", Sections, ref section);
         switch (section)
         {
@@ -28,6 +32,10 @@ internal sealed unsafe class GoldSaucerTab
             case 1: DrawFashion(); break;
             case 2: DrawCards(); break;
             case 3: DrawNpcs(); break;
+            default:
+                if (ImGui.BeginChild("##gsmini", System.Numerics.Vector2.Zero)) miniGames.DrawGame(section - 4);
+                ImGui.EndChild();
+                break;
         }
     }
 
