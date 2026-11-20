@@ -105,6 +105,11 @@ internal sealed class VoyagesTab
             if (rows.Count == 0) continue;
             Theme.Panel($"sm{g.Key}", () =>
             {
+                if (maps.GetRowOrDefault(g.Key)?.Image is { } img and > 0)
+                {
+                    Theme.InlineIcon(img, 64f * Theme.S, null, 440f / 380f);
+                    ImGui.NewLine();
+                }
                 Theme.SubHeader(GuideData.Capitalize(mapName));
                 foreach (var s in rows)
                 {

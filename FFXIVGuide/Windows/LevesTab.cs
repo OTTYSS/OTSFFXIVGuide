@@ -67,7 +67,7 @@ internal sealed class LevesTab
             var client = l.LeveClient.ValueNullable?.Name.ExtractText() ?? "";
             var place = l.PlaceNameIssued.ValueNullable?.Name.ExtractText() ?? l.PlaceNameStart.ValueNullable?.Name.ExtractText() ?? "";
             leves.Add(new LeveRow(l.RowId, name, l.Description.ExtractText(), l.ClassJobLevel, kind, "," + cats + ",", client, place,
-                l.LevelLevemete.RowId, l.GilReward, l.ExpReward, l.AllowanceCost, turnin, repeats, rewards, (uint)Math.Max(0, l.IconIssuer)));
+                l.LevelLevemete.RowId, l.GilReward, l.ExpReward, l.AllowanceCost, turnin, repeats, rewards, (uint)Math.Max(0, l.LeveAssignmentType.ValueNullable?.Icon ?? 0)));
         }
     }
 
@@ -142,6 +142,7 @@ internal sealed class LevesTab
         foreach (var l in list.Take(150))
             Theme.Panel($"lv{l.Id}", () =>
             {
+                Theme.InlineIcon(l.Icon, 0, l.Kind);
                 ImGui.TextColored(Theme.Gold, $"Ур. {l.Level} · {NameTranslations.Show(l.Name)}");
                 ImGui.SameLine();
                 ImGui.TextColored(Theme.TextDim, $"{l.Exp:N0} опыта · {l.Gil:N0} гил" + (l.Allowances > 1 ? $" · {l.Allowances} Allowance" : ""));

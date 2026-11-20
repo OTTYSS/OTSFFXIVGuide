@@ -76,6 +76,7 @@ internal sealed class OceanTab
             var times = r.Time.Select(x => (int)x.RowId).ToList();
             var label = $"{EorzeaWeather.Local(t)} · {name} · {string.Join(" → ", times.Select(x => x < TimeNames.Length ? TimeNames[x] : "?"))}";
             ImGui.PushID(i);
+            Theme.InlineIcon(r.Image, ImGui.GetTextLineHeight() * 1.35f, null, 616f / 348f);
             if (ImGui.Selectable($"{label}##voy", open == i)) open = open == i ? -1 : i;
             ImGui.SameLine(Math.Max(ImGui.GetContentRegionAvail().X * 0.75f, 300 * Theme.S));
             ImGui.TextColored(t <= now ? Theme.Green : Theme.TextDim, t <= now ? "сейчас" : $"через {EorzeaWeather.Until(t)}");

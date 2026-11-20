@@ -71,7 +71,7 @@ internal sealed class SquadronTab
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn(); ImGui.TextUnformatted(m.Name);
-                ImGui.TableNextColumn(); ImGui.TextColored(Theme.TextDim, $"{GuideData.Capitalize(jobs.GetRowOrDefault(m.Job)?.Name.ExtractText() ?? "")} {m.Level}");
+                ImGui.TableNextColumn(); Theme.InlineIcon(Theme.JobIconId(m.Job), ImGui.GetTextLineHeight() * 1.2f); ImGui.TextColored(Theme.TextDim, $"{GuideData.Capitalize(jobs.GetRowOrDefault(m.Job)?.Name.ExtractText() ?? "")} {m.Level}");
                 ImGui.TableNextColumn(); ImGui.TextUnformatted(m.Phys.ToString());
                 ImGui.TableNextColumn(); ImGui.TextUnformatted(m.Ment.ToString());
                 ImGui.TableNextColumn(); ImGui.TextUnformatted(m.Tact.ToString());

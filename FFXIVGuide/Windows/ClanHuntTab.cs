@@ -98,7 +98,10 @@ internal sealed class ClanHuntTab
                     n++;
                     if (hideDone && t.Kills >= t.Needed) continue;
                     var ok = t.Kills >= t.Needed;
-                    ImGui.TextColored(ok ? Theme.Green : Theme.Text, $"   {t.Name}");
+                    ImGui.Dummy(new System.Numerics.Vector2(8 * Theme.S, 0));
+                    ImGui.SameLine();
+                    Theme.InlineIcon(t.Icon, 0, null, 1.5f);
+                    ImGui.TextColored(ok ? Theme.Green : Theme.Text, t.Name);
                     ImGui.SameLine();
                     Theme.MiniBar(t.Kills, t.Needed);
                     ImGui.SameLine();

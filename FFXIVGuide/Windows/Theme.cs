@@ -210,6 +210,30 @@ internal static class Theme
         ImGui.GetWindowDrawList().AddImageRounded(wrap.Handle, pos, pos + new Vector2(size), Vector2.Zero, Vector2.One, 0xFFFFFFFF, rounding * S);
     }
 
+    /// <summary>
+    /// Игровая иконка в строке текста: выровнена по центру строки, после неё SameLine.
+    /// iconId = 0 — ничего не рисует. size ≤ 0 — чуть больше строки текста; aspect — ширина/высота картинки.
+    /// </summary>
+    public static void InlineIcon(uint iconId, float size = 0f, string? tooltip = null, float aspect = 1f)
+    {
+        if (iconId == 0) return;
+        var line = ImGui.GetTextLineHeight();
+        if (size <= 0) size = line * 1.45f;
+        var pos = ImGui.GetCursorScreenPos();
+        var wrap = Plugin.Textures.GetFromGameIcon(new GameIconLookup(iconId)).GetWrapOrEmpty();
+        // Маленькая иконка центрируется по строке; крупная картинка стоит сверху и занимает свою высоту
+        var big = size > line * 1.6f;
+        var top = big ? pos : pos + new Vector2(0, (line - size) / 2);
+        var dim = new Vector2(size * aspect, size);
+        ImGui.GetWindowDrawList().AddImageRounded(wrap.Handle, top, top + dim, Vector2.Zero, Vector2.One, 0xFFFFFFFF, 4f * S);
+        ImGui.Dummy(new Vector2(dim.X, big ? size : line));
+        if (tooltip is not null && ImGui.IsItemHovered()) ImGui.SetTooltip(tooltip);
+        ImGui.SameLine();
+    }
+
+    /// <summary>Иконка класса/профессии по строке ClassJob (игровой набор 062100 + id).</summary>
+    public static uint JobIconId(uint classJob) => classJob == 0 ? 0 : 62100 + classJob;
+
     /// <summary>Картинка из игры по ширине области, с сохранением пропорций.</summary>
     public static void Banner(uint iconId, float width)
     {
