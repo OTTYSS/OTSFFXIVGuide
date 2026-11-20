@@ -243,8 +243,7 @@ internal sealed class ChocoboGardenTab
         }
         if (seedsFrom != text) { seedsFrom = text; seeds = ParseSeeds(text); }
 
-        ImGui.SetNextItemWidth(Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##gdsearch", "Семя или растение…", ref seedSearch, 64);
+        Theme.SearchBox("##gdsearch", "Семя или растение…", ref seedSearch, Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
         var list = seeds!.Where(s => seedSearch.Length == 0 || s.Name.Contains(seedSearch, StringComparison.OrdinalIgnoreCase)
                                      || NameTranslations.Show(s.Name).Contains(seedSearch, StringComparison.OrdinalIgnoreCase)
                                      || s.Crosses.Any(c => c.Contains(seedSearch, StringComparison.OrdinalIgnoreCase))).ToList();

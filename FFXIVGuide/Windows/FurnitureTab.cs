@@ -54,8 +54,7 @@ internal sealed class FurnitureTab
             ImGui.EndCombo();
         }
         ImGui.SameLine();
-        ImGui.SetNextItemWidth(Math.Max(200 * Theme.S, ImGui.GetContentRegionAvail().X - 180 * Theme.S));
-        ImGui.InputTextWithHint("##fsearch", "Название (можно по-русски)…", ref search, 64);
+        Theme.SearchBox("##fsearch", "Название (можно по-русски)…", ref search, Math.Max(200 * Theme.S, ImGui.GetContentRegionAvail().X - 180 * Theme.S), 64);
         ImGui.SameLine();
         ImGui.Checkbox("Только мои", ref onlyOwned);
 

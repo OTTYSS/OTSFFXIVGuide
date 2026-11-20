@@ -76,8 +76,7 @@ internal sealed class VoyagesTab
             ImGui.InputInt("ранг твоего судна##vrank", ref rank);
             rank = Math.Clamp(rank, 1, 150);
             ImGui.SameLine();
-            ImGui.SetNextItemWidth(260 * Theme.S);
-            ImGui.InputTextWithHint("##vsearch", "Сектор или предмет добычи…", ref search, 64);
+            Theme.SearchBox("##vsearch", "Сектор или предмет добычи…", ref search, 260 * Theme.S, 64);
         }
         if (!ImGui.BeginChild("##voy", Vector2.Zero)) { ImGui.EndChild(); return; }
         switch (section)

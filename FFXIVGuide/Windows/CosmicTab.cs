@@ -93,8 +93,7 @@ internal sealed class CosmicTab
         }
         ImGui.SameLine();
         ImGui.Checkbox("Только особые (погода/время)", ref onlySpecial);
-        ImGui.SetNextItemWidth(Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##cssearch", "Название миссии…", ref search, 64);
+        Theme.SearchBox("##cssearch", "Название миссии…", ref search, Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
 
         var key = "," + Jobs[job] + ",";
         var list = missions.Where(m => m.Jobs.Contains(key) && (place.Length == 0 || m.Place == place) && (!onlySpecial || m.Special))

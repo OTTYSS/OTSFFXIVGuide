@@ -70,8 +70,7 @@ internal sealed class SalvageTab
         var prev = section;
         Theme.Chips("svsec", Sections, ref section);
         if (prev != section) { selected = 0; keysFor = ""; }
-        ImGui.SetNextItemWidth(Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##svsearch", section == 2 ? "Название сундука или предмета внутри…" : "Название предмета…", ref search, 64);
+        Theme.SearchBox("##svsearch", section == 2 ? "Название сундука или предмета внутри…" : "Название предмета…", ref search, Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
 
         var (from, to) = section switch
         {

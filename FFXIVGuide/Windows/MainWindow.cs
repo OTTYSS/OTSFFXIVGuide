@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Numerics;
@@ -42,13 +42,30 @@ public sealed class MainWindow : Window
 
     internal static readonly Hub[] Hubs =
     {
-        new("Обзор", FontAwesomeIcon.Compass, new[] { (MainTab.Home, FontAwesomeIcon.Compass, "Обзор"), (MainTab.Progress, FontAwesomeIcon.ChartPie, "Прогресс аккаунта"), (MainTab.Patch, FontAwesomeIcon.Bullhorn, "Что нового в патче"), (MainTab.Mentor, FontAwesomeIcon.Crown, "Ментор") }),
-        new("Поиск", FontAwesomeIcon.Search, new[] { (MainTab.Search, FontAwesomeIcon.Search, "Поиск") }),
+        new("Обзор", FontAwesomeIcon.Compass, new[]
+        {
+            (MainTab.Home, FontAwesomeIcon.Compass, "Обзор"),
+            (MainTab.Search, FontAwesomeIcon.Search, "Поиск"),
+            (MainTab.Progress, FontAwesomeIcon.ChartPie, "Прогресс аккаунта"),
+            (MainTab.Patch, FontAwesomeIcon.Bullhorn, "Что нового в патче"),
+            (MainTab.Mentor, FontAwesomeIcon.Crown, "Ментор"),
+        }),
         new("Сюжет и квесты", FontAwesomeIcon.Book, new[]
         {
             (MainTab.Story, FontAwesomeIcon.Book, "Сюжет"),
             (MainTab.Quests, FontAwesomeIcon.Scroll, "Квесты"),
             (MainTab.SideStories, FontAwesomeIcon.BookOpen, "Побочные сюжеты"),
+        }),
+        new("Ежедневное", FontAwesomeIcon.CalendarCheck, new[]
+        {
+            (MainTab.Checklist, FontAwesomeIcon.Tasks, "Дейлики и викли"),
+            (MainTab.Weekly, FontAwesomeIcon.CalendarCheck, "Рейды, события, поставки"),
+            (MainTab.Fates, FontAwesomeIcon.Fire, "FATE"),
+            (MainTab.Hunt, FontAwesomeIcon.Crosshairs, "Охота: марки, S-ранги, клановая"),
+            (MainTab.Leves, FontAwesomeIcon.ClipboardList, "Левы"),
+            (MainTab.Tribes, FontAwesomeIcon.Handshake, "Племена"),
+            (MainTab.Timers, FontAwesomeIcon.Stopwatch, "Таймеры"),
+            (MainTab.Weather, FontAwesomeIcon.CloudSun, "Погода"),
         }),
         new("Бои", FontAwesomeIcon.Dungeon, new[]
         {
@@ -59,6 +76,63 @@ public sealed class MainWindow : Window
             (MainTab.Occult, FontAwesomeIcon.HatWizard, "Occult Crescent"),
             (MainTab.Variant, FontAwesomeIcon.Route, "Variant и Criterion"),
             (MainTab.PvP, FontAwesomeIcon.FistRaised, "PvP"),
+        }),
+        new("Экипировка", FontAwesomeIcon.ShieldAlt, new[]
+        {
+            (MainTab.Gear, FontAwesomeIcon.ShieldAlt, "Экипировка"),
+            (MainTab.Bis, FontAwesomeIcon.Star, "BiS-сеты"),
+            (MainTab.Build, FontAwesomeIcon.Flask, "Материя и еда"),
+            (MainTab.GearState, FontAwesomeIcon.Wrench, "Износ и духовная связь"),
+            (MainTab.Glamour, FontAwesomeIcon.Tshirt, "Гламур"),
+            (MainTab.Leveling, FontAwesomeIcon.ArrowCircleUp, "Прокачка и бонусы опыта"),
+            (MainTab.GcRank, FontAwesomeIcon.Flag, "Ранги Grand Company"),
+            (MainTab.FcActions, FontAwesomeIcon.Users, "Действия FC"),
+        }),
+        new("Коллекции", FontAwesomeIcon.Trophy, new[]
+        {
+            (MainTab.Collections, FontAwesomeIcon.Paw, "Коллекции"),
+            (MainTab.Mounts, FontAwesomeIcon.Horse, "Маунты"),
+            (MainTab.MountFarm, FontAwesomeIcon.Dungeon, "Фарм коллекций"),
+            (MainTab.Achievements, FontAwesomeIcon.Trophy, "Достижения"),
+            (MainTab.Diary, FontAwesomeIcon.ChartLine, "Дневник"),
+        }),
+        new("Исследование", FontAwesomeIcon.Binoculars, new[]
+        {
+            (MainTab.Aether, FontAwesomeIcon.Wind, "Кристаллы и течения"),
+            (MainTab.Sightseeing, FontAwesomeIcon.Binoculars, "Виды (Sightseeing)"),
+            (MainTab.HuntingLog, FontAwesomeIcon.Book, "Hunting Log"),
+            (MainTab.Treasure, FontAwesomeIcon.Gift, "Карты сокровищ"),
+            (MainTab.Ocean, FontAwesomeIcon.Water, "Океан"),
+        }),
+        new("Развлечения", FontAwesomeIcon.Dice, new[]
+        {
+            (MainTab.GoldSaucer, FontAwesomeIcon.Dice, "Gold Saucer и мини-игры"),
+            (MainTab.FauxHollows, FontAwesomeIcon.ThLarge, "Faux Hollows"),
+            (MainTab.Carnivale, FontAwesomeIcon.TheaterMasks, "Masked Carnivale"),
+            (MainTab.Island, FontAwesomeIcon.Umbrella, "Остров"),
+            (MainTab.ChocoboGarden, FontAwesomeIcon.Feather, "Чокобо: компаньон и сад"),
+            (MainTab.Squadron, FontAwesomeIcon.Users, "Сквадроны"),
+            (MainTab.Trove, FontAwesomeIcon.Gem, "Treasure Trove"),
+        }),
+        new("Ремесло и сбор", FontAwesomeIcon.Hammer, new[]
+        {
+            (MainTab.Craft, FontAwesomeIcon.Hammer, "Крафт"),
+            (MainTab.LevelPlanner, FontAwesomeIcon.ChartLine, "Прокачка ремесла и сбора"),
+            (MainTab.Gather, FontAwesomeIcon.Leaf, "Сбор"),
+            (MainTab.CollectableItems, FontAwesomeIcon.Box, "Коллекционные"),
+            (MainTab.RecipeBooks, FontAwesomeIcon.BookOpen, "Книги рецептов"),
+            (MainTab.Ishgard, FontAwesomeIcon.Cloud, "Ishgard Restoration и Diadem"),
+            (MainTab.Cosmic, FontAwesomeIcon.Rocket, "Cosmic Exploration"),
+            (MainTab.Doman, FontAwesomeIcon.Landmark, "Doman Enclave"),
+        }),
+        new("Рынок и ретейнеры", FontAwesomeIcon.Coins, new[]
+        {
+            (MainTab.Inventory, FontAwesomeIcon.BoxOpen, "Инвентарь"),
+            (MainTab.RetainerMarket, FontAwesomeIcon.Store, "Лоты ретейнеров"),
+            (MainTab.Currencies, FontAwesomeIcon.Coins, "Валюты"),
+            (MainTab.Shopping, FontAwesomeIcon.ShoppingCart, "Покупки"),
+            (MainTab.Ventures, FontAwesomeIcon.UserTie, "Вылазки ретейнеров"),
+            (MainTab.Voyages, FontAwesomeIcon.Ship, "Субмарины"),
         }),
         new("Вики", FontAwesomeIcon.BookOpen, new[]
         {
@@ -72,66 +146,10 @@ public sealed class MainWindow : Window
             (MainTab.Salvage, FontAwesomeIcon.Recycle, "Разборка и сундуки"),
             (MainTab.Dyes, FontAwesomeIcon.PaintBrush, "Краски"),
         }),
-        new("Активности", FontAwesomeIcon.Fire, new[]
+        new("Настройки", FontAwesomeIcon.Cog, new[]
         {
-            (MainTab.Fates, FontAwesomeIcon.Fire, "FATE"),
-            (MainTab.Hunt, FontAwesomeIcon.Crosshairs, "Охота: марки, S-ранги, клановая"),
-            (MainTab.HuntingLog, FontAwesomeIcon.Book, "Hunting Log"),
-            (MainTab.Sightseeing, FontAwesomeIcon.Binoculars, "Виды (Sightseeing)"),
-            (MainTab.Leves, FontAwesomeIcon.ClipboardList, "Левы"),
-            (MainTab.Treasure, FontAwesomeIcon.Gift, "Карты сокровищ"),
-            (MainTab.Ocean, FontAwesomeIcon.Water, "Океан"),
-            (MainTab.GoldSaucer, FontAwesomeIcon.Dice, "Gold Saucer и мини-игры"),
-            (MainTab.FauxHollows, FontAwesomeIcon.ThLarge, "Faux Hollows"),
-            (MainTab.Carnivale, FontAwesomeIcon.TheaterMasks, "Masked Carnivale"),
-            (MainTab.Squadron, FontAwesomeIcon.Users, "Сквадроны"),
-            (MainTab.Trove, FontAwesomeIcon.Gem, "Treasure Trove"),
-            (MainTab.Island, FontAwesomeIcon.Umbrella, "Остров"),
-            (MainTab.ChocoboGarden, FontAwesomeIcon.Feather, "Чокобо: компаньон и сад"),
-            (MainTab.Tribes, FontAwesomeIcon.Handshake, "Племена"),
-            (MainTab.Weekly, FontAwesomeIcon.CalendarCheck, "Рейды, события, поставки"),
+            (MainTab.Settings, FontAwesomeIcon.Cog, "Настройки"),
         }),
-        new("Персонаж", FontAwesomeIcon.ShieldAlt, new[]
-        {
-            (MainTab.Gear, FontAwesomeIcon.ShieldAlt, "Экипировка"),
-            (MainTab.GearState, FontAwesomeIcon.Wrench, "Износ и духовная связь"),
-            (MainTab.GcRank, FontAwesomeIcon.Flag, "Ранги Grand Company"),
-            (MainTab.FcActions, FontAwesomeIcon.Users, "Действия FC"),
-            (MainTab.Bis, FontAwesomeIcon.Star, "BiS-сеты"),
-            (MainTab.Build, FontAwesomeIcon.Flask, "Материя и еда"),
-            (MainTab.Leveling, FontAwesomeIcon.ArrowCircleUp, "Прокачка и бонусы опыта"),
-            (MainTab.Achievements, FontAwesomeIcon.Trophy, "Достижения"),
-            (MainTab.Diary, FontAwesomeIcon.ChartLine, "Дневник"),
-            (MainTab.Mounts, FontAwesomeIcon.Horse, "Маунты"),
-            (MainTab.Collections, FontAwesomeIcon.Paw, "Коллекции"),
-            (MainTab.MountFarm, FontAwesomeIcon.Dungeon, "Фарм коллекций"),
-            (MainTab.Aether, FontAwesomeIcon.Wind, "Кристаллы и течения"),
-            (MainTab.Glamour, FontAwesomeIcon.Tshirt, "Гламур"),
-        }),
-        new("Экономика", FontAwesomeIcon.Coins, new[]
-        {
-            (MainTab.Inventory, FontAwesomeIcon.BoxOpen, "Инвентарь"),
-            (MainTab.RetainerMarket, FontAwesomeIcon.Store, "Лоты ретейнеров"),
-            (MainTab.Currencies, FontAwesomeIcon.Coins, "Валюты"),
-            (MainTab.Shopping, FontAwesomeIcon.ShoppingCart, "Покупки"),
-            (MainTab.Craft, FontAwesomeIcon.Hammer, "Крафт"),
-            (MainTab.LevelPlanner, FontAwesomeIcon.ChartLine, "Прокачка ремесла и сбора"),
-            (MainTab.Ishgard, FontAwesomeIcon.Cloud, "Ishgard Restoration и Diadem"),
-            (MainTab.Doman, FontAwesomeIcon.Landmark, "Doman Enclave"),
-            (MainTab.RecipeBooks, FontAwesomeIcon.BookOpen, "Книги рецептов"),
-            (MainTab.Cosmic, FontAwesomeIcon.Rocket, "Cosmic Exploration"),
-            (MainTab.Gather, FontAwesomeIcon.Leaf, "Сбор"),
-            (MainTab.CollectableItems, FontAwesomeIcon.Box, "Коллекционные"),
-            (MainTab.Voyages, FontAwesomeIcon.Ship, "Субмарины"),
-            (MainTab.Ventures, FontAwesomeIcon.UserTie, "Вылазки ретейнеров"),
-        }),
-        new("Время", FontAwesomeIcon.Clock, new[]
-        {
-            (MainTab.Checklist, FontAwesomeIcon.Tasks, "Дейлики и викли"),
-            (MainTab.Timers, FontAwesomeIcon.Stopwatch, "Таймеры"),
-            (MainTab.Weather, FontAwesomeIcon.CloudSun, "Погода"),
-        }),
-        new("Настройки", FontAwesomeIcon.Cog, new[] { (MainTab.Settings, FontAwesomeIcon.Cog, "Настройки") }),
     };
 
     /// <summary>Все вкладки плоским списком (для поиска разделов и закрепления).</summary>
@@ -485,7 +503,11 @@ public sealed class MainWindow : Window
         ImGui.SameLine(0, 12 * Theme.S);
 
         foreach (var n in AllPages)
-            if (n.Tab == current) Theme.CurrentIcon = n.Icon;
+            if (n.Tab == current)
+            {
+                Theme.CurrentIcon = n.Icon;
+                Theme.CurrentHub = n.Hub;
+            }
 
         if (ImGui.BeginChild("##content", Vector2.Zero, false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
@@ -726,7 +748,7 @@ public sealed class MainWindow : Window
             ImGui.SetCursorPos(new Vector2(14 * S, System.Math.Max(ImGui.GetCursorPosY() + 8 * S, ws.Y - 44 * S)));
             ImGui.TextColored(Theme.Gray, "/fguide · Ctrl+Shift+G");
             ImGui.SetCursorPosX(14 * S);
-            ImGui.TextColored(Theme.Gray, "Только информация · v2.27");
+            ImGui.TextColored(Theme.Gray, "Только информация · v2.28");
         }
 
         ImGui.EndChild();

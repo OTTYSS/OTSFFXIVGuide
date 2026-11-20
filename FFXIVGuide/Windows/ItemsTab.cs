@@ -163,8 +163,7 @@ internal sealed class ItemsTab
         ImGui.SetNextItemWidth(260 * Theme.S);
         if (ImGui.BeginCombo("##icat", cur is null ? "Все категории" : NameTranslations.Show(cur.Name), ImGuiComboFlags.HeightLarge))
         {
-            ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint("##icatsearch", "Найти категорию…", ref categorySearch, 40);
+            Theme.SearchBox("##icatsearch", "Найти категорию…", ref categorySearch, -1, 40);
             if (ImGui.Selectable("Все категории", categoryId == 0)) categoryId = 0;
             var lastMajor = -1;
             foreach (var c in categories)

@@ -135,8 +135,7 @@ internal sealed class AetherTab
 
         ImGui.Checkbox("Только зоны, где что-то не открыто", ref onlyMissing);
         ImGui.SameLine();
-        ImGui.SetNextItemWidth(260 * Theme.S);
-        ImGui.InputTextWithHint("##aesearch", "Зона…", ref search, 64);
+        Theme.SearchBox("##aesearch", "Зона…", ref search, 260 * Theme.S, 64);
 
         var list = zones.Select((z, i) => (z, c: totals[i]))
             .Where(x => (!onlyMissing || x.c.Done < x.c.Total) && (search.Length == 0 || x.z.Name.Contains(search, StringComparison.OrdinalIgnoreCase)))

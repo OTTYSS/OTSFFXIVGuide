@@ -101,8 +101,7 @@ internal sealed class MountFarmTab
             ImGui.Checkbox($"{Kinds[k].Plural}##mfk{k}", ref shown[k]);
             if (k < Kinds.Length - 1 && ImGui.GetContentRegionAvail().X > 160 * Theme.S) ImGui.SameLine();
         }
-        ImGui.SetNextItemWidth(260 * Theme.S);
-        ImGui.InputTextWithHint("##mfsearch", "Данж или награда…", ref search, 64);
+        Theme.SearchBox("##mfsearch", "Данж или награда…", ref search, 260 * Theme.S, 64);
 
         var term = search.Trim();
         var rows = duties.Select(d => (d, list: d.Rewards.Where(r => shown[r.Kind]).ToList()))

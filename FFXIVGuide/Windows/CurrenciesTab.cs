@@ -152,8 +152,7 @@ internal sealed unsafe class CurrenciesTab
         if (region is not null) market.Request(region, b.Where(x => Marketable(x.Item)).Select(x => x.Item));
         double Value(Buy x) => region is not null && market.Get(region, x.Item) is { } p ? p.Price * (double)x.Count / x.Cost : 0;
 
-        ImGui.SetNextItemWidth(Math.Max(160 * Theme.S, ImGui.GetContentRegionAvail().X - 220 * Theme.S));
-        ImGui.InputTextWithHint("##cs", "Поиск предмета…", ref search, 64);
+        Theme.SearchBox("##cs", "Поиск предмета…", ref search, Math.Max(160 * Theme.S, ImGui.GetContentRegionAvail().X - 220 * Theme.S), 64);
         ImGui.SameLine();
         ImGui.Checkbox("Только для продажи", ref onlyMarketable);
         var shown = b.Where(x => !onlyMarketable || Marketable(x.Item))

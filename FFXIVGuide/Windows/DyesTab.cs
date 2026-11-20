@@ -63,8 +63,7 @@ internal sealed class DyesTab
             try { Build(); }
             catch (Exception e) { Plugin.Log.Warning(e, "Краски: ошибка разбора"); dyes = new(); }
         }
-        ImGui.SetNextItemWidth(Math.Min(300 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##dysearch", "Название краски…", ref search, 64);
+        Theme.SearchBox("##dysearch", "Название краски…", ref search, Math.Min(300 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
         ImGui.SameLine();
         Theme.Chips("dyshade", Shades, ref shade);
 

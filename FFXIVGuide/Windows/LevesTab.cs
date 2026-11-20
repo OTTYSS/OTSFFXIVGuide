@@ -128,8 +128,7 @@ internal sealed class LevesTab
             ImGui.SetNextItemWidth(160 * Theme.S);
             ImGui.DragIntRange2("Уровни##lvr", ref minLevel, ref maxLevel, 0.3f, 1, 100);
         }
-        ImGui.SetNextItemWidth(Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##lvsearch", "Поиск: название, предмет, место…", ref search, 64);
+        Theme.SearchBox("##lvsearch", "Поиск: название, предмет, место…", ref search, Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
 
         var key = "," + (group == 2 ? "PLD" : abbr) + ",";
         var list = leves!.Where(l => l.Kind == Groups[group].Name && l.Cats.Contains(key) && l.Level >= minLevel && l.Level <= maxLevel)

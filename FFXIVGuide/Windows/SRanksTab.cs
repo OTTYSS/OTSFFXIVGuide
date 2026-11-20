@@ -136,8 +136,7 @@ internal sealed class SRanksTab
             return;
         }
 
-        ImGui.SetNextItemWidth(Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##srsearch", "Имя, зона или условие…", ref search, 64);
+        Theme.SearchBox("##srsearch", "Имя, зона или условие…", ref search, Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
         var list = ranks.Where(r => search.Length == 0 || r.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
                                     || r.Area.Contains(search, StringComparison.OrdinalIgnoreCase)
                                     || NameTranslations.Show(r.Area).Contains(search, StringComparison.OrdinalIgnoreCase)

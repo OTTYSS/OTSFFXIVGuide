@@ -142,8 +142,7 @@ internal sealed class JobsTab
         ImGui.SameLine();
         if (ImGui.SmallButton("Моя профессия##jsme") && PlayerInfo.Ready) job = Plugin.PlayerState.ClassJob.RowId;
         ImGui.SameLine();
-        ImGui.SetNextItemWidth(Math.Max(160 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##jssearch", "Поиск по названию или описанию…", ref search, 64);
+        Theme.SearchBox("##jssearch", "Поиск по названию или описанию…", ref search, Math.Max(160 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
         Theme.Chips("jssec", Sections, ref section);
 
         JobData d;

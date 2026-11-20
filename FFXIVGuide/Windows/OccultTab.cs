@@ -122,8 +122,7 @@ internal sealed class OccultTab
 
     private void DrawCes()
     {
-        ImGui.SetNextItemWidth(Math.Min(360 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##ocsearch", "Поиск по названию…", ref search, 64);
+        Theme.SearchBox("##ocsearch", "Поиск по названию…", ref search, Math.Min(360 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
         var list = ces!.Where(c => search.Length == 0 || c.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
                                    || NameTranslations.Show(c.Name).Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
         if (list.Count == 0) { Theme.EmptyState(FontAwesomeIcon.Bolt, "Ничего не найдено", "Попробуй другое название."); return; }

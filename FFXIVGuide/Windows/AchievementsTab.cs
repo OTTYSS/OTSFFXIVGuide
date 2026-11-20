@@ -157,7 +157,7 @@ internal sealed unsafe class AchievementsTab
             {
                 ImGui.TextColored(Theme.Text, NameTranslations.Show(e.Name));
                 ImGui.SameLine();
-                if (exact.TryGetValue(e.Id, out var ex)) ImGui.TextColored(Theme.Gold, $"{ex.Cur}/{ex.Max}");
+                if (exact.TryGetValue(e.Id, out var ex)) Theme.MiniBar((int)Math.Min(ex.Cur, int.MaxValue), (int)Math.Min(ex.Max, int.MaxValue), 110f * Theme.S);
                 else if (ImGui.SmallButton($"Точный прогресс##ap{e.Id}"))
                 {
                     requested = e.Id;

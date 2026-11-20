@@ -54,8 +54,7 @@ internal sealed class StatusesTab
 
         DrawTarget();
 
-        ImGui.SetNextItemWidth(Math.Max(200 * Theme.S, ImGui.GetContentRegionAvail().X - 420 * Theme.S));
-        ImGui.InputTextWithHint("##stsearch", "Название или текст описания…", ref search, 64);
+        Theme.SearchBox("##stsearch", "Название или текст описания…", ref search, Math.Max(200 * Theme.S, ImGui.GetContentRegionAvail().X - 420 * Theme.S), 64);
         ImGui.SameLine();
         Theme.Chips("stf", Filters, ref filter);
 

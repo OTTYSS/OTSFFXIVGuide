@@ -100,7 +100,7 @@ internal sealed class ClanHuntTab
                     var ok = t.Kills >= t.Needed;
                     ImGui.TextColored(ok ? Theme.Green : Theme.Text, $"   {t.Name}");
                     ImGui.SameLine();
-                    ImGui.TextColored(ok ? Theme.Green : Theme.Yellow, $"{Math.Min(t.Kills, t.Needed)}/{t.Needed}");
+                    Theme.MiniBar(t.Kills, t.Needed);
                     ImGui.SameLine();
                     ImGui.TextColored(Theme.TextDim, t.Zone + (t.Fate is not null ? $" · FATE «{t.Fate}»" : ""));
                     ImGui.SameLine();

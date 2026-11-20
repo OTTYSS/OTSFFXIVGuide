@@ -64,7 +64,7 @@ internal sealed class CompanionTab
         Theme.Panel("cbeq", () =>
         {
             Theme.Progress("Барды (броня для чокобо)", owned, equip.Count, Theme.Blue);
-            ImGui.TextColored(Theme.Gray, "Полный список и где взять — Персонаж → Коллекции → Барды.");
+            ImGui.TextColored(Theme.Gray, "Полный список и где взять — Коллекции → Коллекции → Барды.");
         });
     }
 }

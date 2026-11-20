@@ -75,8 +75,7 @@ internal sealed unsafe class SightseeingTab
             ImGui.TextColored(Theme.Gray, "Встань в отмеченное место в нужное время Эорзеи и сделай эмоцию. Некоторым видам нужна и определённая погода — её игра в данных не хранит, подсказка видна на табличке на месте.");
             ImGui.PopTextWrapPos();
         });
-        ImGui.SetNextItemWidth(Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##sssearch", "Название, зона или регион…", ref search, 64);
+        Theme.SearchBox("##sssearch", "Название, зона или регион…", ref search, Math.Min(420 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
 
         var list = vistas.Where(v => !onlyMissing || !Done(v))
             .Where(v => search.Length == 0 || v.Name.Contains(search, StringComparison.OrdinalIgnoreCase) || v.Place.Contains(search, StringComparison.OrdinalIgnoreCase)

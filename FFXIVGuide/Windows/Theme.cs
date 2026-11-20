@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
@@ -80,6 +80,9 @@ internal static class Theme
 
     /// <summary>Иконка текущего раздела — рисуется в заголовке.</summary>
     public static FontAwesomeIcon CurrentIcon { get; set; } = FontAwesomeIcon.Compass;
+
+    /// <summary>Раздел меню текущей вкладки — показывается над заголовком страницы.</summary>
+    public static string CurrentHub { get; set; } = "";
 
     public static void InitFonts()
     {
@@ -324,6 +327,12 @@ internal static class Theme
 
         ImGui.SetCursorScreenPos(start + new Vector2(circle + 12 * S, 0));
         ImGui.BeginGroup();
+        if (CurrentHub.Length > 0 && CurrentHub != title)
+        {
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, 0));
+            ImGui.TextColored(Alpha(GoldDim, 0.9f), CurrentHub.ToUpperInvariant() + "  ›");
+            ImGui.PopStyleVar();
+        }
         TitleText(Text, title);
         if (subtitle.Length > 0)
             ImGui.TextColored(TextDim, subtitle);
@@ -385,22 +394,107 @@ internal static class Theme
         return changed;
     }
 
-    /// <summary>Поле поиска с иконкой лупы.</summary>
-    public static void Search(string id, string hint, ref string text)
+    /// <summary>Поле поиска на всю ширину.</summary>
+    public static void Search(string id, string hint, ref string text) => SearchBox(id, hint, ref text);
+
+    /// <summary>
+    /// Единое поле поиска: скруглённая «таблетка», лупа внутри, крестик очистки справа.
+    /// width ≤ 0 — вся доступная ширина. Возвращает true, если текст изменился.
+    /// </summary>
+    public static bool SearchBox(string id, string hint, ref string text, float width = 0f, int maxLength = 128)
     {
-        FaIcon(FontAwesomeIcon.Search, TextDim);
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(-1);
-        ImGui.InputTextWithHint(id, hint, ref text, 128);
+        if (width <= 0) width = ImGui.GetContentRegionAvail().X;
+        width = Math.Max(width, 80f * S);
+        var h = ImGui.GetFrameHeight();
+        var pos = ImGui.GetCursorScreenPos();
+        var dl = ImGui.GetWindowDrawList();
+        var fp = ImGui.GetStyle().FramePadding;
+        var iconW = 24f * S;
+
+        // Общий фон под поле и кнопку очистки (само поле прозрачное)
+        var hovered = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(width, h));
+        dl.AddRectFilled(pos, pos + new Vector2(width, h), U32(hovered ? CardHover : CardBg), h / 2);
+
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, Vector4.Zero);
+        ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, Vector4.Zero);
+        ImGui.PushStyleColor(ImGuiCol.FrameBgActive, Vector4.Zero);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(fp.X + iconW - 4f * S, fp.Y));
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f);
+        ImGui.SetNextItemWidth(width - h);
+        var changed = ImGui.InputTextWithHint(id, hint, ref text, maxLength);
+        var active = ImGui.IsItemActive();
+        ImGui.PopStyleVar(2);
+        ImGui.PopStyleColor(3);
+
+        dl.AddRect(pos, pos + new Vector2(width, h), U32(active ? Alpha(Gold, 0.8f) : Border), h / 2, ImDrawFlags.None, 1f * S);
+
+        ImGui.PushFont(UiBuilder.IconFont);
+        var ic = FontAwesomeIcon.Search.ToIconString();
+        var isz = ImGui.CalcTextSize(ic);
+        dl.AddText(pos + new Vector2(fp.X + (iconW - isz.X) / 2 - 2f * S, (h - isz.Y) / 2), U32(active ? Gold : TextDim), ic);
+        ImGui.PopFont();
+
+        // Кнопка очистки — отдельный элемент справа, чтобы ширина и SameLine вели себя как раньше
+        ImGui.SameLine(0, 0);
+        var cpos = ImGui.GetCursorScreenPos();
+        if (ImGui.InvisibleButton(id + "##clear", new Vector2(h, h)) && text.Length > 0)
+        {
+            text = "";
+            changed = true;
+        }
+        if (text.Length > 0)
+        {
+            var ch = ImGui.IsItemHovered();
+            if (ch) ImGui.SetTooltip("Очистить");
+            ImGui.PushFont(UiBuilder.IconFont);
+            var x = FontAwesomeIcon.Times.ToIconString();
+            var xs = ImGui.CalcTextSize(x);
+            dl.AddText(cpos + (new Vector2(h, h) - xs) / 2, U32(ch ? Text : TextDim), x);
+            ImGui.PopFont();
+        }
+        return changed;
+    }
+
+    /// <summary>Короткая полоска прогресса в строке текста: «7/10» поверх заполнения.</summary>
+    public static void MiniBar(int done, int total, float width = 0f)
+    {
+        if (width <= 0) width = 74f * S;
+        done = Math.Clamp(done, 0, Math.Max(total, 0));
+        var f = total <= 0 ? 0f : (float)done / total;
+        var complete = total > 0 && done >= total;
+        var color = complete ? Green : f >= 0.5f ? Gold : Yellow;
+        var h = ImGui.GetTextLineHeight();
+        var pos = ImGui.GetCursorScreenPos();
+        var dl = ImGui.GetWindowDrawList();
+        dl.AddRectFilled(pos, pos + new Vector2(width, h), U32(CardBg), h / 2);
+        if (f > 0) dl.AddRectFilled(pos, pos + new Vector2(Math.Max(width * f, h), h), U32(Alpha(color, 0.45f)), h / 2);
+        dl.AddRect(pos, pos + new Vector2(width, h), U32(Alpha(color, 0.7f)), h / 2);
+        var label = $"{done}/{total}";
+        var ts = ImGui.CalcTextSize(label);
+        dl.AddText(pos + new Vector2((width - ts.X) / 2, (h - ts.Y) / 2), U32(complete ? Green : Text), label);
+        ImGui.Dummy(new Vector2(width, h));
     }
 
     /// <summary>Полоса прогресса с подписью.</summary>
     public static void Progress(string label, int done, int total, Vector4 color)
     {
-        var f = Anim("p" + label, total == 0 ? 0f : (float)done / total);
-        ImGui.TextColored(Text, label);
+        var frac = total == 0 ? 0f : Math.Clamp((float)done / total, 0f, 1f);
+        var f = Anim("p" + label, frac);
+        var complete = total > 0 && done >= total;
+        if (complete) color = Green;
+        if (complete)
+        {
+            FaIcon(FontAwesomeIcon.CheckCircle, Green);
+            ImGui.SameLine();
+        }
+        if (label.Length > 0)
+        {
+            ImGui.TextColored(Text, label);
+            ImGui.SameLine();
+        }
+        ImGui.TextColored(TextDim, $"{done:N0} / {total:N0}");
         ImGui.SameLine();
-        ImGui.TextColored(TextDim, $"{done} / {total}");
+        ImGui.TextColored(complete ? Green : Alpha(color, 0.9f), $"{frac * 100:0}%");
         var pos = ImGui.GetCursorScreenPos();
         var w = Math.Min(ImGui.GetContentRegionAvail().X, MaxBarWidth);
         var h = 8f * S;

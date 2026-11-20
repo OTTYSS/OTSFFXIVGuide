@@ -87,8 +87,7 @@ internal sealed unsafe class HuntingLogTab
             ImGui.EndCombo();
         }
         ImGui.SameLine();
-        ImGui.SetNextItemWidth(Math.Max(160 * Theme.S, ImGui.GetContentRegionAvail().X));
-        ImGui.InputTextWithHint("##hlsearch", "Моб или зона…", ref search, 64);
+        Theme.SearchBox("##hlsearch", "Моб или зона…", ref search, Math.Max(160 * Theme.S, ImGui.GetContentRegionAvail().X), 64);
 
         List<Entry> entries;
         try { entries = Build(Logs[pick].Key); }
@@ -129,7 +128,9 @@ internal sealed unsafe class HuntingLogTab
                         var ok = have >= t.Need;
                         Theme.FaIcon(ok ? FontAwesomeIcon.CheckCircle : FontAwesomeIcon.Crosshairs, ok ? Theme.Green : Theme.Gold);
                         ImGui.SameLine();
-                        ImGui.TextColored(ok ? Theme.Green : Theme.Text, $"{NameTranslations.Show(t.Mob)} — {Math.Min(have, t.Need)}/{t.Need}");
+                        ImGui.TextColored(ok ? Theme.Green : Theme.Text, NameTranslations.Show(t.Mob));
+                        ImGui.SameLine();
+                        Theme.MiniBar(have, t.Need);
                         if (t.Places.Length > 0)
                         {
                             ImGui.SameLine();
